@@ -199,16 +199,16 @@ class LogicHubSession:
         return self.__instance
 
     @instance.setter
-    def instance(self, val: str):
-        _new_instance = val.strip()
+    def instance(self, name: str):
+        name = name.strip()
         self.config.reload()
         _updated_config = LhubConfig()
-        _new_credentials = _updated_config.get_instance(_new_instance)
+        _new_credentials = _updated_config.get_instance(name)
         if not _new_credentials:
-            self.config.create_instance(_new_instance)
-            _new_credentials = _updated_config.get_instance(_new_instance)
+            self.config.create_instance(name)
+            _new_credentials = _updated_config.get_instance(name)
 
-        self.__instance = _new_instance
+        self.__instance = name
         self.config = _updated_config
         self.credentials = _new_credentials
 
