@@ -80,13 +80,15 @@ class Preferences:
 
 class Connection:
     def __init__(self, **kwargs):
-        self.server = kwargs.get("server")
+        self.hostname = kwargs.get("hostname")
+        self.api_key = kwargs.get("api_key")
         self.username = kwargs.get("username")
         self.password = kwargs.get("password")
         self.verify_ssl = kwargs.get("verify_ssl") or True
-        assert self.server, "Server name not provided"
-        assert self.username, "Username not provided"
-        assert self.password, "Password not provided"
+        assert self.hostname, "Server hostname not provided"
+        if not self.api_key:
+            assert self.password, "Neither an API key nor a password were provided in the connection config"
+            assert self.username, "Username not provided"
 
 
 class LhubConfig:
@@ -124,7 +126,10 @@ class LhubConfig:
         if instance_label not in self.__full_config:
             return
         _credentials = self.__full_config[instance_label]
-        _credentials['password'] = self.encryption.decrypt_string(_credentials['password'])
+        if _credentials.get('password'):
+            _credentials['password'] = self.encryption.decrypt_string(_credentials['password'])
+        if _credentials.get('api_key'):
+            _credentials['api_key'] = self.encryption.decrypt_string(_credentials['api_key'])
         return Connection(**_credentials)
 
     def create_instance(self, instance_label):
@@ -169,10 +174,10 @@ class LhubConfig:
         _ = LogicHub(hostname=_server, username=_username, password=_password, api_key=_api_key, verify_ssl=verify_ssl)
         if _password:
             encrypted_password = self.encryption.encrypt_string(_password)
-            self.update_connection(instance_label, server=_server, username=_username, password=encrypted_password, verify_ssl=verify_ssl)
+            self.update_connection(instance_label, hostname=_server, username=_username, password=encrypted_password, verify_ssl=verify_ssl)
         else:
             encrypted_token = self.encryption.encrypt_string(_api_key)
-            self.update_connection(instance_label, server=_server, api_token=encrypted_token, verify_ssl=verify_ssl)
+            self.update_connection(instance_label, hostname=_server, api_key=encrypted_token, verify_ssl=verify_ssl)
         self.reload()
 
     def list_configured_instances(self):
