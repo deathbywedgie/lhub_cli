@@ -176,7 +176,7 @@ class LhubConfig:
 
 class LogicHubSession:
     __instance = None
-    preferences: Preferences = None
+    # preferences: Preferences = None
     credentials = None
 
     # ToDo Hide this (dunder) when finished developing
@@ -184,8 +184,9 @@ class LogicHubSession:
 
     def __init__(self, instance_alias=None):
         self.config = LhubConfig()
-        if not self.preferences:
-            self.preferences = Preferences()
+        # ToDo Not yet used, but the groundwork has been laid. Revisit and enable this when ready to begin putting it to use.
+        # if not self.preferences:
+        #     self.preferences = Preferences()
         if instance_alias:
             self.instance = instance_alias
 
