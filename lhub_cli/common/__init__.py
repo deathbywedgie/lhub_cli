@@ -1,1 +1,1 @@
-from . import shell
+from . import config, shell
