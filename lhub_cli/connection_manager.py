@@ -206,8 +206,8 @@ class LogicHubSession:
         _new_credentials = _updated_config.get_instance(_new_instance)
         if not _new_credentials:
             self.config.create_instance(_new_instance)
+            _new_credentials = _updated_config.get_instance(_new_instance)
 
-        _new_credentials = _updated_config.get_instance(_new_instance)
         self.__instance = _new_instance
         self.config = _updated_config
         self.credentials = _new_credentials
