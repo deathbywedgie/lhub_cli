@@ -1,37 +1,21 @@
 from pathlib import Path
 import os
-import configobj
+from configobj import ConfigObj
 from dataclasses import dataclass
 from dataclasses_json import dataclass_json
 from lhub import LogicHub
 from .encryption import Encryption
 import getpass
+from .common.config import dict_to_ini_file
 
-lhub_config_path = os.path.join(str(Path.home()), ".logichub")
-credentials_file_name = "credentials"
-preferences_file_name = "preferences"
+# Over-writable/configurable static variables
+LHUB_CONFIG_PATH = os.path.join(str(Path.home()), ".logichub")
+CREDENTIALS_FILE_NAME = "credentials"
+PREFERENCES_FILE_NAME = "preferences"
 
 # Ensure that the path exists
-lhub_path = Path(lhub_config_path)
-lhub_path.mkdir(parents=True, exist_ok=True)
-
-
-def dict_to_ini_file(_dict, _file_path):
-    config = configobj.ConfigObj(indent_type='    ', write_empty_values=True)
-    config.filename = _file_path
-    _first_line = True
-    # Sort by connection name in order to make the credential file more readable
-    _dict = dict(sorted(_dict.items()))
-    for k, v in _dict.items():
-        config[k] = v
-
-        if _first_line:
-            _first_line = False
-        else:
-            # Hack for adding a blank line between sections: Insert an empty comment before each section
-            # https://sourceforge.net/p/configobj/mailman/message/24432354/
-            config.comments[k].insert(0, '')
-    config.write()
+__lhub_path = Path(LHUB_CONFIG_PATH)
+__lhub_path.mkdir(parents=True, exist_ok=True)
 
 
 @dataclass_json
@@ -53,8 +37,8 @@ class Preferences:
     commands: _PreferenceCommands = None
 
     def __post_init__(self):
-        self.preferences_file_name = preferences_file_name
-        self.preferences_path = os.path.join(lhub_config_path, self.preferences_file_name)
+        self.preferences_file_name = PREFERENCES_FILE_NAME
+        self.preferences_path = os.path.join(LHUB_CONFIG_PATH, self.preferences_file_name)
         self.get_preferences()
 
     def save_preferences_file(self):
@@ -67,7 +51,7 @@ class Preferences:
             self.save_preferences_file()
             return
 
-        preferences_obj = configobj.ConfigObj(self.preferences_path)
+        preferences_obj = ConfigObj(self.preferences_path)
         if not self.main:
             self.main = _PreferenceMain(**{
                 k: v for k, v in preferences_obj.dict().get("main", {}).items()
@@ -92,18 +76,18 @@ class Connection:
 
 
 class LhubConfig:
-    __full_config: configobj.ConfigObj = None
-    credentials_file_name = credentials_file_name
+    __full_config: ConfigObj = None
+    credentials_file_name = CREDENTIALS_FILE_NAME
 
     def __init__(self):
-        self.credentials_path = os.path.join(lhub_config_path, self.credentials_file_name)
+        self.credentials_path = os.path.join(LHUB_CONFIG_PATH, self.credentials_file_name)
         self.__load_credentials_file()
-        self.encryption = Encryption(lhub_config_path)
+        self.encryption = Encryption(LHUB_CONFIG_PATH)
 
     def __load_credentials_file(self):
         if not os.path.exists(self.credentials_path):
             dict_to_ini_file({}, self.credentials_path)
-        self.__full_config = configobj.ConfigObj(self.credentials_path)
+        self.__full_config = ConfigObj(self.credentials_path)
 
     def reload(self):
         self.__load_credentials_file()
