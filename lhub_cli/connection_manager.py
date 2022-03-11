@@ -76,6 +76,8 @@ class Connection:
         self.username = kwargs.get("username")
         self.password = kwargs.get("password")
         self.verify_ssl = kwargs.get("verify_ssl") or True
+        if isinstance(self.verify_ssl, str):
+            self.verify_ssl = not self.verify_ssl.lower() == 'false'
         assert self.hostname, "Server hostname not provided"
         if not self.api_key:
             assert self.password, "Neither an API key nor a password were provided in the connection config"
