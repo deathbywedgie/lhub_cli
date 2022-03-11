@@ -121,10 +121,9 @@ class LhubConfig:
         # Make a copy of the dict, otherwise this will only work once, and it
         # will fail with a decryption error any subsequent calls for the same instance
         _credentials = {k: v for k, v in self.__full_config[instance_label].items()}
-        if _credentials.get('password'):
-            _credentials['password'] = self.encryption.decrypt_string(_credentials['password'])
-        if _credentials.get('api_key'):
-            _credentials['api_key'] = self.encryption.decrypt_string(_credentials['api_key'])
+        for k in _credentials:
+            if k in ('password', 'api_key'):
+                _credentials[k] = self.encryption.decrypt_string(_credentials[k])
         return Connection(**_credentials)
 
     def create_instance(self, instance_label):
