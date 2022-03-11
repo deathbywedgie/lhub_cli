@@ -7,6 +7,8 @@ from lhub import LogicHub
 from .encryption import Encryption
 import getpass
 from .common.config import dict_to_ini_file
+from .common.shell import query_yes_no
+from requests.exceptions import SSLError
 
 # Over-writable/configurable static variables
 LHUB_CONFIG_PATH = os.path.join(str(Path.home()), ".logichub")
@@ -126,56 +128,76 @@ class LhubConfig:
                 _credentials[k] = self.encryption.decrypt_string(_credentials[k])
         return Connection(**_credentials)
 
-    def create_instance(self, instance_label):
-        _server = _username = _password = _disable_warnings = _auth_type = _api_key = ""
-        while not _server:
-            _server = input("Server hostname or IP: ")
+    def create_instance(self, instance_label, server=None, auth_type=None, api_key=None, username=None, password=None, verify_ssl=None):
+        instance_label = instance_label.strip()
+        if instance_label in self.__full_config:
+            raise ValueError(f"An instance already exists by the name {instance_label}")
+        server = server.strip() if server else None
+        auth_type = auth_type.strip() if auth_type else None
+        api_key = api_key.strip() if api_key else None
+        username = username.strip() if username else None
+        password = password.strip() if password else None
+        verify_ssl = verify_ssl if isinstance(verify_ssl, bool) else None
 
-        while _auth_type not in ('password', 'api_key'):
-            _auth_type = input('Enter "1" for password auth or "2" for API token auth:\n').strip()
-            if _auth_type == '1':
-                _auth_type = "password"
-            elif _auth_type == '2':
-                _auth_type = 'api_key'
+        if password and not api_key:
+            # If a password was provided but no API key, assume password auth
+            auth_type = 'password'
+        if api_key and not password:
+            # If a API key was provided but no password, assume password auth
+            auth_type = 'api_key'
+
+        while not server:
+            server = input("Server hostname or IP: ").strip()
+
+        while auth_type not in ('password', 'api_key'):
+            auth_type = input('Enter "1" for password auth or "2" for API token auth:\n').strip()
+            if auth_type == '1':
+                auth_type = "password"
+            elif auth_type == '2':
+                auth_type = 'api_key'
             else:
                 print('Invalid input\n')
 
         # Password auth
-        if _auth_type == 'password':
-            _api_key = None
-            while not _username:
-                _username = input("Username: ")
-            while not _password:
-                _password = getpass.getpass()
+        if auth_type == 'password':
+            api_key = None
+            while not username:
+                username = input("Username: ")
+            while not password:
+                password = getpass.getpass()
 
         # API token auth
         else:
-            _username = _password = None
-            while not _api_key:
-                _api_key = getpass.getpass(prompt='API Token: ')
+            username = password = None
+            while not api_key:
+                api_key = getpass.getpass(prompt='API Token: ')
 
         # verify_ssl = query_yes_no('Verify SSL?', 'y')
-        verify_ssl = True
-        while _disable_warnings.lower() not in ('y', 'n'):
-            _disable_warnings = input("Verify SSL? (y or n) ").lower()
-            if not _disable_warnings or _disable_warnings == 'y':
-                verify_ssl = True
-                break
-            elif _disable_warnings == 'n':
-                verify_ssl = False
+        if verify_ssl is None:
+            verify_ssl = query_yes_no('Verify SSL?', 'y')
 
-        # verify_ssl = False if _disable_warnings == 'n' else True
-        _ = LogicHub(hostname=_server, username=_username, password=_password, api_key=_api_key, verify_ssl=verify_ssl)
-        if _password:
-            encrypted_password = self.encryption.encrypt_string(_password)
-            self.update_connection(instance_label, hostname=_server, username=_username, password=encrypted_password, verify_ssl=verify_ssl)
+        try:
+            _ = LogicHub(hostname=server, username=username, password=password, api_key=api_key, verify_ssl=verify_ssl)
+        except SSLError as err:
+            verify_ssl = not query_yes_no('SSL certificate verification failed. Disable SSL verification?')
+            if verify_ssl:
+                raise err
+            else:
+                _ = LogicHub(hostname=server, username=username, password=password, api_key=api_key, verify_ssl=verify_ssl)
+
+        if password:
+            password = self.encryption.encrypt_string(password)
+            self.update_connection(instance_label, hostname=server, username=username, password=password, verify_ssl=verify_ssl)
         else:
-            encrypted_token = self.encryption.encrypt_string(_api_key)
-            self.update_connection(instance_label, hostname=_server, api_key=encrypted_token, verify_ssl=verify_ssl)
+            api_key = self.encryption.encrypt_string(api_key)
+            self.update_connection(instance_label, hostname=server, api_key=api_key, verify_ssl=verify_ssl)
         self.reload()
 
     def list_configured_instances(self):
-        instances = sorted(self.__full_config.dict().keys())
+        return sorted(self.__full_config.dict().keys())
+
+    def print_configured_instances(self):
+        instances = self.list_configured_instances()
         if not instances:
             print("No stored instances")
         else:
