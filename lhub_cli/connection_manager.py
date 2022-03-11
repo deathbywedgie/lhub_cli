@@ -65,6 +65,7 @@ class Preferences:
 @dataclass_json
 @dataclass
 class Connection:
+    # Deliberately left out password and api_token so that those sensitive fields do not show in JSON form
     hostname: str
     username: str
     verify_ssl: bool
