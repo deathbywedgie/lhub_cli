@@ -62,7 +62,13 @@ class Preferences:
             })
 
 
+@dataclass_json
+@dataclass
 class Connection:
+    hostname: str
+    username: str
+    verify_ssl: bool
+
     def __init__(self, **kwargs):
         self.hostname = kwargs.get("hostname")
         self.api_key = kwargs.get("api_key")
