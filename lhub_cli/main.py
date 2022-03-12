@@ -9,25 +9,19 @@ import re
 from .connection_manager import LogicHubSession
 
 
-class LogicHubCLI:
-    def __init__(self, instance_name, log_level=None):
-        # ToDo:
-        #  * Move the logging function out of lhub and into lhub_cli
-        #  * Standardize better w/ the "logging" package
-        self.log = lhub.log.Logger(log_level=log_level)
-        self.__config = LogicHubSession(instance_name)
-        self.session = lhub.LogicHub(
-            **self.__config.credentials.to_dict(),
-            api_key=self.__config.credentials.api_key,
-            password=self.__config.credentials.password
-        )
+# ToDo This isn't going to scale indefinitely. Need to break these actions apart by feature somehow.
+class Actions:
+    def __init__(self, session: lhub.LogicHub, instance_label):
+        self.lhub = session
+        self.log = self.lhub.api.log
+        self.__instance_name = instance_label
 
     def _set_export_path(self, parent_folder, export_type):
         current_date = time.strftime("%Y-%m-%d")
         _folder_counter = 0
         while True:
             _folder_counter += 1
-            _new_export_folder = os.path.join(parent_folder, f"{self.session.api.url.server_name}_{export_type}_{current_date}_{_folder_counter}")
+            _new_export_folder = os.path.join(parent_folder, f"{self.lhub.api.url.server_name}_{export_type}_{current_date}_{_folder_counter}")
             if not os.path.exists(_new_export_folder) or not os.listdir(_new_export_folder):
                 parent_folder = _new_export_folder
                 path = Path(parent_folder)
@@ -58,8 +52,7 @@ class LogicHubCLI:
 
     def export_flows(self, export_folder, limit=None):
         export_folder = self._set_export_path(parent_folder=export_folder, export_type="flows")
-
-        flow_ids = self.session.actions.playbook_ids
+        flow_ids = self.lhub.actions.playbook_ids
         flow_ids_list = sorted(list(flow_ids.keys()))
         if limit:
             flow_ids_list = flow_ids_list[:limit]
@@ -69,13 +62,13 @@ class LogicHubCLI:
             _file_info = f"{n + 1} of {len(flow_ids_list)}: {_flow_id} ({_flow_name})"
             self.log.info(f"{_file_info} - Downloading...")
             try:
-                _response = self.session.api.export_playbook(_flow_id)
+                _response = self.lhub.api.export_playbook(_flow_id)
                 self._save_export_to_disk(response=_response, export_folder=export_folder, resource_id=_flow_id, resource_name=_flow_name, file_info=_file_info)
             except HTTPError:
                 warning = f"{_file_info} - Download FAILED"
-                _response_message = json.loads(self.session.api.last_response_text)
+                _response_message = json.loads(self.lhub.api.last_response_text)
                 if not _response_message.get("errors"):
-                    self.log.error(warning + f': unknown failure (status code {self.session.api.last_response_status})')
+                    self.log.error(warning + f': unknown failure (status code {self.lhub.api.last_response_status})')
                 else:
                     for _error in _response_message.get("errors", []):
                         warning += f": {_error.get('errorType')}: {_error['message']}"
@@ -95,8 +88,28 @@ class LogicHubCLI:
             batch_id = batch_ids[n]
             if sec_between_calls and n > 0:
                 time.sleep(sec_between_calls)
-            _ = self.session.actions.reprocess_batch(batch_id)
-            self.log.info(f'Batch {batch_id} rerun on {self.__config.instance}')
+            _ = self.lhub.actions.reprocess_batch(batch_id)
+            self.log.info(f'Batch {batch_id} rerun on {self.__instance_name}')
+
+
+class LogicHubCLI:
+    def __init__(self, instance_name, log_level=None):
+        # ToDo:
+        #  * Move the logging function out of lhub and into lhub_cli
+        #  * Standardize better w/ the "logging" package
+        self.__config = LogicHubSession(instance_name)
+        self.session = lhub.LogicHub(
+            **self.__config.credentials.to_dict(),
+            api_key=self.__config.credentials.api_key,
+            password=self.__config.credentials.password,
+            log_level=log_level
+        )
+        self.log = self.session.api.log
+        self.actions = Actions(
+            session=self.session,
+            instance_label=self.__config.instance
+        )
+
 
 # ToDo NEXT: Follow the same formula from "export_flows" to add support for exporting other resource types as well
 #  * event types

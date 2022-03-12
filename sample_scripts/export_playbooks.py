@@ -29,7 +29,7 @@ def main():
         # ToDo Add a better arg for this... should be able to specify any level
         log_level="DEBUG" if args.debug else None
     )
-    session.export_flows(EXPORT_FOLDER, limit=args.limit)
+    session.actions.export_flows(EXPORT_FOLDER, limit=args.limit)
 
 
 if __name__ == "__main__":

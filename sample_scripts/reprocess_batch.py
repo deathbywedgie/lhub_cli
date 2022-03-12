@@ -35,7 +35,7 @@ def main():
         log_level = "DEBUG"
     shell = lhub_cli.LogicHubCLI(args.instance_name, log_level=log_level)
     try:
-        shell.reprocess_batches(args.batch_ids)
+        shell.actions.reprocess_batches(args.batch_ids)
     except lhub.exceptions.LhBaseException as e:
         shell.log.fatal(f'FAILED: {str(e)}')
         sys.exit(1)
