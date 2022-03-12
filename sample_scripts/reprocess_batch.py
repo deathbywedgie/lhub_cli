@@ -33,18 +33,12 @@ def main():
     log_level = None
     if args.debug:
         log_level = "DEBUG"
-    batches = sorted(list(set(args.batch_ids)))
     shell = lhub_cli.LogicHubCLI(args.instance_name, log_level=log_level)
-    for n in range(len(batches)):
-        batch_id = batches[n]
-        if n > 0:
-            time.sleep(_SECONDS_BETWEEN_CALLS)
-        try:
-            _ = shell.session.actions.reprocess_batch(batch_id)
-        except lhub.exceptions.LhBaseException as e:
-            shell.log.fatal(f'FAILED: {str(e)}')
-            sys.exit(1)
-        print(f'Batch {batch_id} rerun on {args.instance_name}')
+    try:
+        shell.reprocess_batches(args.batch_ids)
+    except lhub.exceptions.LhBaseException as e:
+        shell.log.fatal(f'FAILED: {str(e)}')
+        sys.exit(1)
 
 
 if __name__ == "__main__":
