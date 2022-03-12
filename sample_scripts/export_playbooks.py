@@ -2,11 +2,9 @@
 
 import lhub
 import lhub_cli
-from lhub_cli.connection_manager import LogicHubSession
 import argparse
 
 EXPORT_FOLDER = "_exports"
-DEFAULT_LOG_LEVEL = "DEBUG"
 DEFAULT_EXPORT_LIMIT = 0
 
 
@@ -39,18 +37,11 @@ def get_args():
 
 def main():
     args = get_args()
-    # ToDo Add a log level for this
-    lhub.lhub.Logger.log_level = DEFAULT_LOG_LEVEL
+    # ToDo Add a better arg for this... should be able to specify any level
+    if args.debug:
+        lhub.lhub.Logger.log_level = "DEBUG"
 
-    config = LogicHubSession(instance_alias=args.instance_label)
-    session = lhub_cli.LogicHubCLI(
-        **config.credentials.to_dict(),
-        api_key=config.credentials.api_key,
-        password=config.credentials.password,
-    )
-
-    # print(f'Version: {session.api.version}')
-    # session.api.export_flows(EXPORT_FOLDER, limit=2)
+    session = lhub_cli.LogicHubCLI(args.instance_label)
     session.export_flows(EXPORT_FOLDER, limit=args.limit)
 
 
