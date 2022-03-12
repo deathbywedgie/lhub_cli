@@ -84,3 +84,15 @@ class LogicHubCLI:
                             _error_file.write(warning + "\n")
 
         self.log.info("Finished")
+
+# ToDo NEXT: Follow the same formula from "export_flows" to add support for exporting other resource types as well
+#  * event types
+#  * custom lists
+#  * commands
+#  * modules
+#  * custom integration
+#  * baselines
+#  * scripts (legacy)
+#  * scripts (new, used in runScript)
+#  * dashboards & widgets
+#  * cases? Probably not, but maybe...
