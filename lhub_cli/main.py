@@ -15,11 +15,11 @@ class LogicHubCLI:
         #  * Move the logging function out of lhub and into lhub_cli
         #  * Standardize better w/ the "logging" package
         self.log = lhub.log.Logger(log_level=log_level)
-        config = LogicHubSession(instance_name)
+        self.__config = LogicHubSession(instance_name)
         self.session = lhub.LogicHub(
-            **config.credentials.to_dict(),
-            api_key=config.credentials.api_key,
-            password=config.credentials.password
+            **self.__config.credentials.to_dict(),
+            api_key=self.__config.credentials.api_key,
+            password=self.__config.credentials.password
         )
 
     def _set_export_path(self, parent_folder, export_type):
@@ -84,6 +84,19 @@ class LogicHubCLI:
                             _error_file.write(warning + "\n")
 
         self.log.info("Finished")
+
+    def reprocess_batches(self, batch_ids: (list, str, int), sec_between_calls=None):
+        if not isinstance(batch_ids, list):
+            batch_ids = [batch_ids]
+        batch_ids = sorted(list(set(batch_ids)))
+        if sec_between_calls:
+            sec_between_calls = float(sec_between_calls)
+        for n in range(len(batch_ids)):
+            batch_id = batch_ids[n]
+            if sec_between_calls and n > 0:
+                time.sleep(sec_between_calls)
+            _ = self.session.actions.reprocess_batch(batch_id)
+            self.log.info(f'Batch {batch_id} rerun on {self.__config.instance}')
 
 # ToDo NEXT: Follow the same formula from "export_flows" to add support for exporting other resource types as well
 #  * event types
