@@ -10,12 +10,11 @@ from .connection_manager import LogicHubSession
 
 
 class LogicHubCLI:
-
-    def __init__(self, instance_name):
+    def __init__(self, instance_name, log_level=None):
         # ToDo:
         #  * Move the logging function out of lhub and into lhub_cli
         #  * Standardize better w/ the "logging" package
-        self.log = lhub.log.Logger()
+        self.log = lhub.log.Logger(log_level=log_level)
         config = LogicHubSession(instance_name)
         self.session = lhub.LogicHub(
             **config.credentials.to_dict(),
