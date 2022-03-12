@@ -12,7 +12,7 @@ log = Logger()
 
 class Command:
     __output_type = "json_pretty"
-    _supported_output_types = sorted(["json", "json_pretty", "raw", "raw_pretty", "table", "csv"])
+    supported_output_types = ["csv", "json", "json_pretty", "raw", "raw_pretty", "table"]
     verify_ssl = True
     lhub_hidden_fields = ["lhub_page_num", "lhub_id"]
 
@@ -32,8 +32,8 @@ class Command:
 
     @output_type.setter
     def output_type(self, var):
-        if var not in self._supported_output_types:
-            raise ValueError(f"\"{var}\" is not a supported output type. Supported types are: {self._supported_output_types}")
+        if var not in self.supported_output_types:
+            raise ValueError(f"\"{var}\" is not a supported output type. Supported types are: {self.supported_output_types}")
         self.__output_type = var
 
     def __extract_command_results(self, response, fields: list = None, drop: list = None):
