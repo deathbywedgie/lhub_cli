@@ -4,7 +4,6 @@
 Reprocess batches on demand
 """
 
-import time
 import argparse
 import lhub
 import lhub_cli
