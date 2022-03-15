@@ -6,7 +6,7 @@ from requests import HTTPError
 import json
 import base64
 import re
-from .connection_manager import LogicHubSession
+from .connection_manager import LogicHubConnection
 
 
 # ToDo This isn't going to scale indefinitely. Need to break these actions apart by feature somehow.
@@ -97,7 +97,7 @@ class LogicHubCLI:
         # ToDo:
         #  * Move the logging function out of lhub and into lhub_cli
         #  * Standardize better w/ the "logging" package
-        self.__config = LogicHubSession(instance_name)
+        self.__config = LogicHubConnection(instance_name)
         self.session = lhub.LogicHub(
             **self.__config.credentials.to_dict(),
             api_key=self.__config.credentials.api_key,

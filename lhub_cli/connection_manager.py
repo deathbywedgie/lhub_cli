@@ -206,7 +206,7 @@ class LhubConfig:
                 print(f"    {i}")
 
 
-class LogicHubSession:
+class LogicHubConnection:
     __instance = None
     # preferences: Preferences = None
     credentials = None
