@@ -1,3 +1,4 @@
+from lhub import LogicHub
 from lhub.log import Logger
 from lhub.common.dicts_and_lists import to_dict_recursive
 import json
@@ -19,7 +20,7 @@ class Command:
     verify_ssl = True
     lhub_hidden_fields = ["lhub_page_num", "lhub_id"]
 
-    def __init__(self, session, verify_ssl=True, output_type: str = None, table_format: str = None):
+    def __init__(self, session: LogicHub, verify_ssl=True, output_type: str = None, table_format: str = None):
         if output_type:
             self.output_type = output_type
         if isinstance(verify_ssl, bool):
@@ -51,6 +52,9 @@ class Command:
         for row_num in range(len(rows)):
 
             rows[row_num]['fields'] = {k: v for k, v in rows[row_num]['fields'].items() if k not in drop_fields}
+
+            # columns =
+            # rows[row_num]['columns'] = {k: v for k, v in rows[row_num]['fields'].items() if k not in drop_fields}
             if fields:
                 new_output = {}
 
@@ -61,8 +65,12 @@ class Command:
                     rows[row_num]['fields'] = new_output
                 else:
                     log.warn(f"None of the provided fields were found in the results. Returning all columns.")
+        x = """/result/rows/data/0/schema/columns/0/name"""
+        ordered_headers = []
+        if rows:
+            ordered_headers = [field['name'] for field in rows[0]['schema']['columns'] if field['name'] not in drop_fields]
         log.debug(f"Non-result response: {json.dumps(response)}")
-        return rows, warnings
+        return rows, ordered_headers, warnings
 
     def print_command_results(self, results, fields: list = None, drop: list = None, output_file: str = None):
         def split_id_from_fields(result_list):
@@ -83,10 +91,16 @@ class Command:
                     _file.write(output)
 
         def _print_table(result_list):
+            if not result_list:
+                log.debug("Empty results")
+            _keys = result_list[0].keys() if result_list else ['no results']
+            kwargs = {
+                "tabular_data": [x.values() for x in result_list],
+                "headers": _keys
+            }
             if self.table_format:
-                output = tabulate([x.values() for x in result_list], headers=result_list[0].keys(), tablefmt=self.table_format)
-            else:
-                output = tabulate([x.values() for x in result_list], headers=result_list[0].keys())
+                kwargs["tablefmt"] = self.table_format
+            output = tabulate(**kwargs)
 
             print(output)
             if output_file:
@@ -128,24 +142,30 @@ class Command:
             _print_raw(results, pretty=True)
             return
 
-        output_functions = {
-            "json": (_print_json, {"pretty": False}),
-            "json_pretty": (_print_json, {"pretty": True}),
-            "table": (_print_table, {}),
-            "csv": (_print_csv, {})
-        }
-
-        func, kwargs = output_functions.get(self.__output_type)
-        if not func:
-            raise ValueError(f"Unsupported output type: {self.output_type}")
-
-        reformatted, warnings = self.__extract_command_results(results, fields=fields or [], drop=drop or [])
+        reformatted, ordered_headers, warnings = self.__extract_command_results(results, fields=fields or [], drop=drop or [])
 
         for _warning in warnings:
             log.warn(f"Warning returned: {_warning}")
 
         rows = split_id_from_fields(reformatted)
-        func(rows, **kwargs)
+        if ordered_headers:
+            new_rows = []
+            for n in range(len(rows)):
+                new_entry = {}
+                for k in ordered_headers:
+                    new_entry[k] = rows[n][k]
+                new_rows.append(new_entry)
+            rows = new_rows
+        if self.__output_type == "json":
+            _print_json(rows, pretty=False)
+        elif self.__output_type == "json_pretty":
+            _print_json(rows, pretty=True)
+        elif self.__output_type == "table":
+            _print_table(rows)
+        elif self.__output_type == "csv":
+            _print_csv(rows)
+        else:
+            raise ValueError(f"Unsupported output type: {self.output_type}")
 
     def run_command(self, command, fix_json=False, fields: list = None, drop: list = None, output_file: str = None, **kwargs):
         fix_json = False if fix_json is False else True
