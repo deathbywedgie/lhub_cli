@@ -4,17 +4,20 @@ import re
 import sys
 
 import lhub
-from lhub.log import Logger
-from tabulate import tabulate_formats
 
 import lhub_cli
-
-log = Logger()
+from lhub_cli.features.commands import TABLE_FORMATS
 
 
 # ToDo:
-#   * Add an argparse option for setting the result limit to return. Default is 25.
-#   * Rework lhub_cli & this file so that lhub_cli is *only* for stuff that should still be there when this switches to a shell
+#  * Add an argparse option for setting the result limit to return. Default is 25.
+#  * Rework lhub_cli & this file so that lhub_cli is *only* for stuff that should still be there when this switches to a shell
+#  * Get rid of references to lhub. Sample scripts shouldn't have to know about lhub. lhub_cli should handle everything.
+#  * Try to move all logging out of lhub
+
+def log_fatal(msg):
+    print(f"[FATAL] {msg}", file=sys.stderr)
+    sys.exit(1)
 
 
 def parse_and_validate_args():
@@ -32,7 +35,7 @@ def parse_and_validate_args():
         "--log_level",
         type=str,
         default="info",
-        choices=Logger._LOG_LEVELS,
+        choices=lhub.log.LOG_LEVELS,
         help="Log level (default: info)"
     )
 
@@ -75,7 +78,7 @@ def parse_and_validate_args():
         "--table_format",
         type=str,
         default=None,
-        choices=tabulate_formats,
+        choices=TABLE_FORMATS,
         help="Table format, ignored if output type is not table (\"tablefmt\" from tabulate python package)"
     )
 
@@ -87,47 +90,44 @@ def parse_and_validate_args():
     # take in the arguments provided by user
     _args = parser.parse_args()
 
-    log.log_level = _args.log_level
-
     if not _args.instance:
-        log.fatal("Instance cannot be blank")
+        log_fatal("Instance cannot be blank")
     if not _args.command:
-        log.fatal("command cannot be blank")
+        log_fatal("command cannot be blank")
 
     lhub.LogicHub.http_timeout_login = _args.timeout_logon
-    log.debug(f"Logon timeout: {_args.timeout_logon}")
-
     lhub.LogicHub.http_timeout_default = _args.timeout
-    log.debug(f"Other HTTP timeout: {_args.timeout}")
 
     return _args
 
 
 def main():
     args = parse_and_validate_args()
-
     command_parameters = {}
     for i in args.params:
         _parts = re.search("^([^=]+)=(.*)", i)
         if not _parts:
-            log.fatal(f"Parameters must be key-value pairs. Invalid input: {i}")
+            log_fatal(f"Parameters must be key-value pairs. Invalid input: {i}")
         command_parameters[_parts.group(1)] = _parts.group(2)
 
     fields = [x.strip() for x in args.fields.split(',') if x.strip()]
     drop_fields = [x.strip() for x in args.drop.split(',') if x.strip()]
 
-    config = lhub_cli.connection_manager.LhubConfig()
-    config = config.get_instance(args.instance)
-    session = lhub.LogicHub(
-        hostname=config.hostname, api_key=config.api_key, username=config.username, password=config.password, verify_ssl=config.verify_ssl)
+    shell = lhub_cli.LogicHubCLI(args.instance, log_level=args.log_level)
+    shell.log.debug(f"Logon timeout: {args.timeout_logon}")
+    shell.log.debug(f"Other HTTP timeout: {args.timeout}")
 
-    cmd = lhub_cli.features.commands.Command(
-        session=session,
-        verify_ssl=config.verify_ssl,
-        output_type=args.output_type,
-        table_format=args.table_format
-    )
-    cmd.run_command(command=args.command, fix_json=args.fix_json, fields=fields, drop=drop_fields, output_file=args.file, **command_parameters)
+    try:
+        command = lhub_cli.features.commands.Command(
+            session=shell.session,
+            verify_ssl=shell.session.api.verify_ssl,
+            output_type=args.output_type,
+            table_format=args.table_format
+        )
+        command.run_command(command=args.command, fix_json=args.fix_json, fields=fields, drop=drop_fields, output_file=args.file, **command_parameters)
+    except lhub.exceptions.LhBaseException as e:
+        shell.log.fatal(f'FAILED: {str(e)}')
+        sys.exit(1)
 
 
 if __name__ == "__main__":
