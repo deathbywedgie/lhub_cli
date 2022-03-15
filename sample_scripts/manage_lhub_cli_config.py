@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import sys
 
 from lhub_cli.connection_manager import LhubConfig
 import argparse
@@ -9,7 +10,7 @@ SHOW_SECURE = False
 def get_args():
     parser = argparse.ArgumentParser(description="Manage LogicHub CLI connections")
 
-    parser.add_argument("instance_label", type=str, help="Label (name) for the connection")
+    parser.add_argument("instance_label", type=str, nargs="?", help="Label (name) for the connection")
 
     parser.add_argument("--show_secure", action="store_true", help="Optional: include passwords and API tokens in output", default=None)
 
@@ -33,6 +34,9 @@ def get_args():
     #     parser.instance_label = "x"
     _args = parser.parse_args()
     _args.verify_ssl = None
+    if not _args.show_all and not _args.instance_label:
+        print("instance_label is required except with '--show_all'", file=sys.stderr)
+        exit(1)
     if _args.yes:
         _args.verify_ssl = True
     if _args.no:
