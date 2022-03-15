@@ -1,11 +1,14 @@
 from lhub.log import Logger
 from lhub.common.dicts_and_lists import to_dict_recursive
 import json
-from tabulate import tabulate
+from tabulate import tabulate, tabulate_formats
 import csv
 import os
 
 log = Logger()
+
+# Quick reference for external scripts
+TABLE_FORMATS = tabulate_formats
 
 
 # ToDo Rewrite to make this a part of the LogicHubCLI instance instead of needing the "session" input
@@ -23,6 +26,8 @@ class Command:
             self.verify_ssl = verify_ssl
         else:
             raise TypeError("verify_ssl requires a boolean value")
+        if table_format and table_format not in TABLE_FORMATS:
+            raise ValueError(f"Invalid table format: {table_format}")
         self.table_format = table_format
         self.session = session
 
