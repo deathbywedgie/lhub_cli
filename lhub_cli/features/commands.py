@@ -65,7 +65,6 @@ class Command:
                     rows[row_num]['fields'] = new_output
                 else:
                     log.warn(f"None of the provided fields were found in the results. Returning all columns.")
-        x = """/result/rows/data/0/schema/columns/0/name"""
         ordered_headers = []
         if rows:
             ordered_headers = [field['name'] for field in rows[0]['schema']['columns'] if field['name'] not in drop_fields]
