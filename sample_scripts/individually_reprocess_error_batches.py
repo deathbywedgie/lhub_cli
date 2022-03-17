@@ -157,7 +157,6 @@ class LogicHubStream:
             batch_state = self.batches.map[f'batch-{batch_id}']['state']
             if STATES[batch_state] != 'pending':
                 if batch_state in STATES_TO_REPROCESS:
-                    # print_debug(f"Final batch details: {self.batches.map[f'batch-{batch_id}']}")
                     print(f'\nWARNING: Batch {batch_id} finished with state "{batch_state}"')
                     try:
                         errors = self.batches.map[f'batch-{batch_id}']['errorsAndWarnings'].get('errors', [])
@@ -179,6 +178,8 @@ def main():
     if args.force_unlimited or batch_limit < 1:
         batch_limit = 9999999
     print_debug(f"Batch limit set to {batch_limit}")
+
+    # Phase out doing this manually. Use LogicHubCLI for this instead.
     config = ConfigFile()
 
     instance = config.get_instance_config(args.instance_name)
