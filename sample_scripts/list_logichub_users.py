@@ -3,9 +3,8 @@
 import argparse
 import sys
 
-from lhub.log import Logger
-
 import lhub_cli
+from lhub_cli.common.output import print_fancy_lists
 
 DEFAULT_LOG_LEVEL = "INFO"
 DEFAULT_OUTPUT = "json"
@@ -33,47 +32,34 @@ def get_args():
 
 def main():
     args = get_args()
-    log = Logger(log_level=args.log_level)
 
-    config = lhub_cli.connection_manager.LogicHubConnection()
     if args.instance_names:
         instances = args.instance_names
     else:
+        config = lhub_cli.connection_manager.LogicHubConnection()
         instances = config.config.list_configured_instances()
 
-    output = []
+    # For all available attributes, set: attributes = "*"
+    attributes = ["email", "is_admin", "groups"]
+
+    combined_results = []
     for i in instances:
-        # If the instance name does not already exist as a saved connection, this will
         cli = lhub_cli.LogicHubCLI(i, log_level=args.log_level)
+        cli.session.api.log.debug(f"Connected to {i}")
+        combined_results.extend(
+            cli.actions.list_users(
+                attributes=attributes,
+                print_output=False,
+                return_results=True,
+                show_hostname=True,
+                hide_inactive=False,
+                sort_order=[]
+            )
+        )
 
-        log.info(f"Connecting to {i}")
-        result = cli.session.actions.list_users(hide_inactive=True)
-
-        for user in result['data']:
-            username = user["name"]
-            groups = user['groups']
-            entry = {
-                "connection name": i,
-                "hostname": cli.session.api.url.server_name,
-                "username": username,
-            }
-            is_admin = False
-            for g in groups:
-                if g['name'] == "Admin":
-                    is_admin = True
-            entry["is admin"] = is_admin
-            output.append(entry)
-
-    # Sort the results by connection name, hostname, and then username (function lists reverse order)
-    output = sorted(output, key=lambda e: (e['username'], e['hostname'], e['connection name']))
-
-    lhub_cli.common.output.print_fancy_lists(
-        results=output,
-        output_type=args.output_type,
-        table_format=args.table_format,
-        ordered_headers=None,
-        output_file=args.file
-    )
+    # Set to None in order to leave all results in the default order, in the order of connections as they were requested
+    sort_order = ["connection name"]
+    print_fancy_lists(combined_results, sort_order=sort_order)
 
 
 if __name__ == "__main__":
