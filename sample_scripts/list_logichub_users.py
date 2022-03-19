@@ -20,33 +20,8 @@ def get_args():
     # Optional inputs
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
 
-    # ToDo Find out if there is a way to bundle this "output" argument group in a way that a script can add it while still having its own args too
-    output = parser.add_argument_group('output')
-
-    output.add_argument(
-        "-f", "--file",
-        type=str,
-        default=None,
-        help="Also write output to a file")
-
-    output.add_argument(
-        "-o", "--output",
-        dest="output_type",
-        type=str,
-        metavar="<OPTION>",
-        default=DEFAULT_OUTPUT,
-        choices=lhub_cli.features.commands.Command.supported_output_types,
-        help=f"Output style (default: {DEFAULT_OUTPUT}). Available output types are: {', '.join(lhub_cli.features.commands.Command.supported_output_types)}")
-
-    # https://github.com/astanin/python-tabulate#table-format
-    output.add_argument(
-        "-t", "--table_format",
-        type=str,
-        metavar="<OPTION>",
-        default=None,
-        choices=lhub_cli.common.output.supported_table_formats,
-        help=f"Table format (ignored if output type is not table). Available formats are: {', '.join(lhub_cli.common.output.supported_table_formats)}"
-    )
+    # Add standard output arg definitions
+    lhub_cli.common.args.add_script_output_args(parser, default=DEFAULT_OUTPUT)
 
     _args = parser.parse_args()
     _args.log_level = DEFAULT_LOG_LEVEL
