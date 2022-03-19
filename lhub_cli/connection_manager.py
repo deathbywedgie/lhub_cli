@@ -72,7 +72,8 @@ class Connection:
     username: str
     verify_ssl: bool
 
-    def __init__(self, **kwargs):
+    def __init__(self, name, **kwargs):
+        self.connection_name = name
         self.hostname = kwargs.get("hostname")
         self.api_key = kwargs.get("api_key")
         self.username = kwargs.get("username")
@@ -126,7 +127,7 @@ class LhubConfig:
         for k in _credentials:
             if k in ('password', 'api_key'):
                 _credentials[k] = self.encryption.decrypt_string(_credentials[k])
-        return Connection(**_credentials)
+        return Connection(name=instance_label, **_credentials)
 
     def create_instance(self, instance_label, server=None, auth_type=None, api_key=None, username=None, password=None, verify_ssl=None):
         instance_label = instance_label.strip()
