@@ -4,9 +4,8 @@ import os
 
 from tabulate import tabulate, tabulate_formats
 
-# ToDo Work this in
-supported_output_types = ["csv", "json", "json_pretty", "raw", "raw_pretty", "table"]
-supported_table_formats = tabulate_formats
+SUPPORTED_OUTPUT_TYPES = ["csv", "json", "json_pretty", "table"]
+SUPPORTED_TABLE_FORMATS = tabulate_formats
 
 
 def print_fancy_lists(results, output_type, table_format=None, ordered_headers=None, output_file: str = None):
@@ -19,25 +18,20 @@ def print_fancy_lists(results, output_type, table_format=None, ordered_headers=N
                 _file.write(output)
 
     def print_table(result_list):
-        _keys = result_list[0].keys() if result_list else ['no results']
-        kwargs = {
-            "tabular_data": [x.values() for x in result_list],
-            "headers": _keys
-        }
         if table_format:
-            kwargs["tablefmt"] = table_format
-        output = tabulate(**kwargs)
+            if table_format not in SUPPORTED_TABLE_FORMATS:
+                raise ValueError(f"{table_format} is not a supported table format")
 
-        print(output)
-        if output_file:
-            with open(output_file, "w+") as _file:
-                _file.write(output)
+        data = [x.values() for x in result_list]
+        headers = ordered_headers
+        if not headers:
+            headers = result_list[0].keys() if result_list else ['no results']
 
-    def print_raw(result_list, pretty=False):
-        indent = 2 if pretty else None
-        output = result_list
-        if isinstance(output, (list, dict)):
-            output = json.dumps(result_list, indent=indent)
+        output = tabulate(
+            tabular_data=data,
+            headers=headers,
+            tablefmt=table_format or None
+        )
         print(output)
         if output_file:
             with open(output_file, "w+") as _file:
@@ -61,12 +55,8 @@ def print_fancy_lists(results, output_type, table_format=None, ordered_headers=N
         if _output_file == default_temp_file:
             os.remove(_output_file)
 
-    if output_type == "raw":
-        print_raw(results, pretty=False)
-        return
-    elif output_type == "raw_pretty":
-        print_raw(results, pretty=True)
-        return
+    if output_type not in SUPPORTED_OUTPUT_TYPES:
+        raise ValueError(f"{output_type} is not a valid output type")
 
     if ordered_headers:
         new_rows = []
