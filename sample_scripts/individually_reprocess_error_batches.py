@@ -24,7 +24,6 @@ from lhub_cli.connection_manager import LogicHubConnection
 
 
 # Static/configurable vars
-DEFAULT_BATCH_LIMIT = 100
 DEBUG_ENABLED = False
 STATES_TO_REPROCESS = ['error', 'canceled']
 
@@ -52,11 +51,7 @@ def get_args():
 
     # Optional args:
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
-
-    # Mutually Exclusive Args
-    limits = parser.add_mutually_exclusive_group()
-    limits.add_argument("-l", "--limit", type=int, default=DEFAULT_BATCH_LIMIT, help=f"Set the maximum number of batches to reprocess (default: {DEFAULT_BATCH_LIMIT})")
-    limits.add_argument("-1", dest="force_unlimited", action="store_true", help=f"No batch limit")
+    parser.add_argument("-l", "--limit", type=int, default=None, help=f"Set the maximum number of batches to reprocess (default: None)")
 
     # take in the arguments provided by user
     _args = parser.parse_args()
@@ -174,9 +169,7 @@ class LogicHubStream:
 
 def main():
     args = get_args()
-    batch_limit = args.limit
-    if args.force_unlimited or batch_limit < 1:
-        batch_limit = 9999999
+    batch_limit = args.limit if args.limit and args.limit > 0 else 9999999
     print_debug(f"Batch limit set to {batch_limit}")
 
     connection = LogicHubConnection(args.instance_name)
