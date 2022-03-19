@@ -12,7 +12,7 @@ from sys import stderr
 
 import lhub
 from lhub.common.time import epoch_time_to_str
-from lhub_cli.config import ConfigFile
+from lhub_cli.connection_manager import LogicHubConnection
 
 # ToDo Currently this script pulls a list of ALL batches and their states in
 #      order to check on the status of a batch that is being reprocessed,
@@ -91,9 +91,9 @@ class LogicHubStream:
     batches = None
     __stream_name = None
 
-    def __init__(self, hostname, api_key, stream_id, verify_ssl=True, **kwargs):
-        self.session = lhub.LogicHub(hostname=hostname, api_key=api_key, verify_ssl=verify_ssl, **kwargs)
+    def __init__(self, stream_id, **kwargs):
         self.stream_id = re.sub(r'\D+', '', stream_id) if isinstance(stream_id, str) else stream_id
+        self.session = lhub.LogicHub(**kwargs)
         print(f"Checking status of stream \"{self.stream_name}\"")
         self.update_batches()
 
@@ -179,16 +179,13 @@ def main():
         batch_limit = 9999999
     print_debug(f"Batch limit set to {batch_limit}")
 
-    # Phase out doing this manually. Use LogicHubCLI for this instead.
-    config = ConfigFile()
-
-    instance = config.get_instance_config(args.instance_name)
+    connection = LogicHubConnection(args.instance_name)
     try:
         session = LogicHubStream(
-            hostname=instance['hostname'],
-            api_key=instance['api_key'],
             stream_id=args.stream_id,
-            verify_ssl=instance.get('verify_ssl', True)
+            api_key=connection.credentials.api_key,
+            password=connection.credentials.password,
+            **connection.credentials.to_dict()
         )
     except lhub.exceptions.StreamNotFound as e:
         print(f'FAILED: {e.message}', file=stderr)
