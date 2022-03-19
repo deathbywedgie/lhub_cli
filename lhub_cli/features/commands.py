@@ -84,7 +84,7 @@ class Command:
         def _print_json(result_list, pretty=False):
             indent = 2 if pretty else None
             output = json.dumps(result_list, indent=indent)
-            log.print(output)
+            print(output)
             if output_file:
                 with open(output_file, "w+") as _file:
                     _file.write(output)
@@ -109,7 +109,7 @@ class Command:
         def _print_raw(result_list, pretty=False):
             indent = 2 if pretty else None
             output = json.dumps(result_list, indent=indent)
-            log.print(output)
+            print(output)
             if output_file:
                 with open(output_file, "w+") as _file:
                     _file.write(output)
@@ -128,8 +128,6 @@ class Command:
 
             with open(_output_file, 'r') as _file:
                 print(_file.read().strip())
-                # for _line in _file.readlines():
-                #     print(_line)
 
             if _output_file == default_temp_file:
                 os.remove(_output_file)
