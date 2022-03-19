@@ -7,6 +7,7 @@ import json
 import base64
 import re
 from .connection_manager import LogicHubConnection
+from .common.output import print_fancy_lists
 
 
 # ToDo NEXT: Follow the same formula from "export_flows" to add support for exporting other resource types as well
@@ -106,3 +107,70 @@ class Actions:
             _ = self.lhub.actions.reprocess_batch(batch_id)
             self.log.info(f'Batch {batch_id} rerun on {self.__instance_name}')
 
+    @staticmethod
+    def _reformat_user(user: dict):
+        groups = [g['name'] for g in user['groups'] if not g.get("isDeleted", False)]
+        user_attributes = {
+            "username": user.get("name"),
+            "is_admin": user["role"]["value"] == "admin",
+            "groups": ', '.join(groups),
+            "email": user.get("email"),
+            "is_deleted": user.get("isDeleted"),
+            "is_enabled": user.get("isEnabled"),
+            "auth_type": user.get("authenticationType"),
+            "id": user.get("userId"),
+        }
+        # would it be beneficial to make a class object for these instead of returning a dict?
+        return user_attributes
+
+    @staticmethod
+    def _reformat_users(users: list):
+        return [Actions._reformat_user(user) for user in users]
+
+    def list_users(self, attributes: list = None, print_output=True, return_results=True, show_hostname=False, hide_inactive=True, sort_order=None, **print_kwargs):
+        supported_attributes = sorted(["is_admin", "email", "groups", "is_deleted", "is_enabled", "auth_type", "id"])
+        if sort_order is None:
+            sort_order = ["connection name", "username"]
+        if attributes == "*":
+            attributes = supported_attributes
+        attributes = attributes or []
+        fields = {a: False for a in supported_attributes}
+        for a in (attributes or []):
+            if a not in supported_attributes:
+                raise ValueError(f"{a} is not a supported attribute")
+            fields[a] = True
+
+        self.log.debug("Fetching user list")
+        result = self.lhub.actions.list_users(hide_inactive=hide_inactive)
+        self.log.debug(f"{len(result['data'])} users found")
+        output = []
+        admin_user_count = 0
+        reformatted_users = self._reformat_users(result['data'])
+        for user in reformatted_users:
+            # First column should be connection name
+            row = {"connection name": self.__config.credentials.connection_name}
+
+            # If hostname is enabled, it should appear second
+            if show_hostname:
+                row["hostname"] = self.lhub.api.url.server_name
+
+            # Username should be third
+            row["username"] = user["username"]
+
+            # All other columns in order that they are requested
+            for a in attributes:
+                row[a] = user[a]
+
+            # Log how many admin users were detected
+            if user["is_admin"] and user["is_enabled"] and not user["is_deleted"]:
+                admin_user_count += 1
+
+            output.append(row)
+
+        self.log.debug(f"{admin_user_count} admin users found")
+        for column in [sort_order[-1 - n] for n in range(len(sort_order))]:
+            output = sorted(output, key=lambda e: (e[column]))
+        if print_output:
+            print_fancy_lists(results=output, **print_kwargs)
+        if return_results:
+            return output
