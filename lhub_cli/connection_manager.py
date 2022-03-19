@@ -232,15 +232,13 @@ class LogicHubConnection:
     def instance(self, name: str):
         name = name.strip()
         self.config.reload()
-        _updated_config = LhubConfig()
-        _new_credentials = _updated_config.get_instance(name)
+        _new_credentials = self.config.get_instance(name)
         if not _new_credentials:
             print(f"No instance found by name \"{name}.\" Creating new connection...")
             self.config.create_instance(name)
-            _new_credentials = _updated_config.get_instance(name)
+            _new_credentials = self.config.get_instance(name)
 
         self.__instance = name
-        self.config = _updated_config
         self.credentials = _new_credentials
 
         # ToDo Logic here for prompting for credentials, test them, and then save an updated credentials file
