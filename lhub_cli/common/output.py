@@ -4,8 +4,8 @@ import os
 
 from tabulate import tabulate, tabulate_formats
 
-SUPPORTED_OUTPUT_TYPES = ["csv", "json", "json_pretty", "table"]
-SUPPORTED_TABLE_FORMATS = tabulate_formats
+SUPPORTED_OUTPUT_TYPES = sorted(["csv", "json", "json_pretty", "table"])
+SUPPORTED_TABLE_FORMATS = sorted(tabulate_formats)
 
 
 def print_fancy_lists(results, output_type, table_format=None, ordered_headers=None, output_file: str = None):
