@@ -3,8 +3,11 @@
 import cmd
 from .connection_manager import LogicHubConnection
 from lhub.log import Logger
+from colorama import init as init_colorama
+from colorama import Fore, Back, Style
 
 log = Logger()
+init_colorama()
 
 
 # ToDo make sure Shell.session doesn't have to be set explicitly in order to use this
@@ -12,7 +15,8 @@ class Shell(cmd.Cmd):
     # Override the default prompt of "(cmd) "
     # prompt = "(logichub) "
     # Fancy colorful version
-    prompt = '\x1b[6;30;47m' + 'Logic' + '\x1b[6;31;47m' + 'Hub' + '\x1b[0m % '
+    # prompt = '\x1b[6;30;47m' + 'Logic' + '\x1b[6;31;47m' + 'Hub' + '\x1b[0m % '
+    prompt = Fore.BLACK + Back.WHITE + 'Logic' + Fore.RED + 'Hub' + Style.RESET_ALL + ' % '
     session: LogicHubConnection = None
 
     def __init__(self):

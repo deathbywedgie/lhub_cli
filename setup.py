@@ -17,6 +17,7 @@ setup(
         "rsa >= 4.8",
         "requests",
         "tabulate",
+        "colorama",
     ],
     keywords=["python", "lhub", "LogicHub"],
 

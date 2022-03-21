@@ -4,3 +4,4 @@ dataclasses_json >= 0.5.6
 rsa >= 4.8
 tabulate
 requests
+colorama
