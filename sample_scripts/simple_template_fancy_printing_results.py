@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import json
 
 import lhub_cli
 from lhub_cli.common.output import print_fancy_lists

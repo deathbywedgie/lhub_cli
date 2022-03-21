@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from lhub_cli.connection_manager import LogicHubConnection
 import argparse
 import lhub
 from lhub_cli.shell import Shell
@@ -39,5 +38,4 @@ if __name__ == '__main__':
     # log.debug(f"Setting custom HTTP timeout: {args.timeout}")
 
     # ToDo Add option to provide the connection label up front when the script is invoked
-    # Shell.session = LogicHubConnection(instance_alias=args.instance)
     Shell().cmdloop()
