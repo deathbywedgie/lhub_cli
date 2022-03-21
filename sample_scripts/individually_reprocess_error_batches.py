@@ -180,7 +180,7 @@ def main():
             password=connection.credentials.password,
             **connection.credentials.to_dict()
         )
-    except lhub.exceptions.StreamNotFound as e:
+    except lhub.exceptions.app.StreamNotFound as e:
         print(f'FAILED: {e.message}', file=stderr)
         return
 
