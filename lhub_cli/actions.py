@@ -10,7 +10,7 @@ from .connection_manager import LogicHubConnection
 from .common.output import print_fancy_lists
 
 
-# ToDo NEXT: Follow the same formula from "export_flows" to add support for exporting other resource types as well
+# ToDo NEXT: Follow the same formula from "export_playbooks" to add support for exporting other resource types as well
 #  * event types
 #  * custom lists
 #  * commands
@@ -66,12 +66,14 @@ class Actions:
             _file.write(file_data)
         self.log.info(f"{file_info} - Saved successfully")
 
-    def export_flows(self, export_folder, limit=None):
+    def export_playbooks(self, export_folder, limit=None, return_summary=False):
         export_folder = self.__set_export_path(parent_folder=export_folder, export_type="flows")
+        self.log.info(f"Saving files to: {export_folder}")
         flow_ids = self.lhub.actions.playbook_ids
         flow_ids_list = sorted(list(flow_ids.keys()))
         if limit:
             flow_ids_list = flow_ids_list[:limit]
+        failed = {}
         for n in range(len(flow_ids_list)):
             _flow_id = flow_ids_list[n]
             _flow_name = flow_ids[_flow_id]
@@ -83,16 +85,30 @@ class Actions:
             except HTTPError:
                 warning = f"{_file_info} - Download FAILED"
                 _response_message = json.loads(self.lhub.api.last_response_text)
+                if not failed.get(_flow_id):
+                    failed[_flow_id] = {"name": _flow_name, "errors": []}
                 if not _response_message.get("errors"):
-                    self.log.error(warning + f': unknown failure (status code {self.lhub.api.last_response_status})')
+                    error = f"unknown failure (status code {self.lhub.api.last_response_status})"
+                    new_warning = f"{warning}: {error}"
+                    failed[_flow_id]["errors"].append(error)
+                    self.log.error(new_warning)
+                    with open(os.path.join(export_folder, "_FAILURES.log"), "a+") as _error_file:
+                        _error_file.write(new_warning + "\n")
                 else:
                     for _error in _response_message.get("errors", []):
-                        warning += f": {_error.get('errorType')}: {_error['message']}"
-                        self.log.error(warning)
+                        error = f"{_error.get('errorType')}: {_error['message']}"
+                        new_warning = f"{warning}: {error}"
+                        failed[_flow_id]["errors"].append(error)
+                        self.log.error(new_warning)
                         with open(os.path.join(export_folder, "_FAILURES.log"), "a+") as _error_file:
-                            _error_file.write(warning + "\n")
+                            _error_file.write(new_warning + "\n")
 
         self.log.info("Playbook export complete")
+        if return_summary:
+            successful = True
+            if failed:
+                successful = False
+            return successful, failed
 
     def reprocess_batches(self, batch_ids: (list, str, int), sec_between_calls=None):
         if not isinstance(batch_ids, list):
