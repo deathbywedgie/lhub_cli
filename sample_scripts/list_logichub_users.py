@@ -7,7 +7,7 @@ import lhub_cli
 from lhub_cli.common.output import print_fancy_lists
 
 DEFAULT_LOG_LEVEL = "INFO"
-DEFAULT_OUTPUT = "json"
+DEFAULT_OUTPUT = "table"
 
 
 def get_args():
@@ -50,10 +50,10 @@ def main():
             cli.actions.list_users(
                 attributes=attributes,
                 print_output=False,
-                return_results=True,
+                # return_results=True,
                 show_hostname=True,
-                hide_inactive=False,
-                sort_order=[]
+                # hide_inactive=False,
+                # sort_order=[]
             )
         )
 
