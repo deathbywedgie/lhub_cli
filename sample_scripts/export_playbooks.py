@@ -37,7 +37,7 @@ def main():
     if not successful:
         failed_str = "One or more playbooks failed to export:\n\n"
         for k, v in failures.items():
-            failed_str += f"\t{k}: {v['name']}\n\n"
+            failed_str += f"\t{k}: {v['name']}\n"
             # for n in range(len(v["errors"])):
             e = v["errors"][0]
             _error = e.replace('\n', '\n\t\t')
