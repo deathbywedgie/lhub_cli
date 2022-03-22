@@ -5,6 +5,7 @@ import sys
 
 import lhub_cli
 from lhub_cli.common.output import print_fancy_lists
+import progressbar
 
 DEFAULT_LOG_LEVEL = "INFO"
 DEFAULT_OUTPUT = "table"
@@ -43,9 +44,10 @@ def main():
     attributes = ["email", "is_admin", "groups"]
 
     combined_results = []
-    for i in instances:
-        cli = lhub_cli.LogicHubCLI(i, log_level=args.log_level)
-        cli.session.api.log.debug(f"Connected to {i}")
+    for n in progressbar.progressbar(range(len(instances))):
+        _instance = instances[n]
+        cli = lhub_cli.LogicHubCLI(_instance, log_level=args.log_level)
+        cli.session.api.log.debug(f"Connected to {_instance}")
         combined_results.extend(
             cli.actions.list_users(
                 attributes=attributes,
@@ -59,7 +61,11 @@ def main():
 
     # Set to None in order to leave all results in the default order, in the order of connections as they were requested
     sort_order = ["connection name"]
-    print_fancy_lists(combined_results, sort_order=sort_order)
+
+    file_only = False
+    if args.file:
+        file_only = True
+    print_fancy_lists(combined_results, sort_order=sort_order, output_file=args.file or None, file_only=file_only)
 
 
 if __name__ == "__main__":
