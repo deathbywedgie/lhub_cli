@@ -8,7 +8,7 @@ SUPPORTED_OUTPUT_TYPES = sorted(["csv", "json", "json_pretty", "table"])
 SUPPORTED_TABLE_FORMATS = sorted(tabulate_formats)
 
 
-def print_fancy_lists(results, output_type="table", table_format=None, ordered_headers=None, output_file=None, sort_order=None):
+def print_fancy_lists(results, output_type="table", table_format=None, ordered_headers=None, output_file=None, sort_order=None, file_only=False):
     """
     Print a list of dicts in a variety of ways, such as json, CSV, or assorted text tables
 
@@ -34,7 +34,8 @@ def print_fancy_lists(results, output_type="table", table_format=None, ordered_h
     def print_json(result_list, pretty=False):
         indent = 2 if pretty else None
         output = json.dumps(result_list, indent=indent)
-        print(output)
+        if not file_only:
+            print(output)
         if output_file:
             with open(output_file, "w+") as _file:
                 _file.write(output)
@@ -54,7 +55,8 @@ def print_fancy_lists(results, output_type="table", table_format=None, ordered_h
             headers=headers,
             tablefmt=table_format or None
         )
-        print(output)
+        if not file_only:
+            print(output)
         if output_file:
             with open(output_file, "w+") as _file:
                 _file.write(output)
@@ -71,8 +73,9 @@ def print_fancy_lists(results, output_type="table", table_format=None, ordered_h
             for data in result_list:
                 writer.writerow(data)
 
-        with open(_output_file, 'r') as _file:
-            print(_file.read().strip())
+        if not file_only:
+            with open(_output_file, 'r') as _file:
+                print(_file.read().strip())
 
         if _output_file == default_temp_file:
             os.remove(_output_file)
