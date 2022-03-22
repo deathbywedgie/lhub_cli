@@ -5,3 +5,5 @@ rsa >= 4.8
 tabulate
 requests
 colorama
+# Only used in sample scripts for now, and imported not as "progressbar2" but just "progressbar"
+progressbar2

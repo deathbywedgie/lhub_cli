@@ -18,6 +18,7 @@ setup(
         "requests",
         "tabulate",
         "colorama",
+        "progressbar2",  # Only used in sample scripts for now, and imported not as "progressbar2" but just "progressbar"
     ],
     keywords=["python", "lhub", "LogicHub"],
 
