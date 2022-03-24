@@ -5,10 +5,12 @@ import json
 
 import lhub_cli
 
+SCRIPT_DESCRIPTION = "Simple script for testing API calls"
+
 
 # available args and expected input
 def get_args():
-    parser = argparse.ArgumentParser(description="Simple script for testing API calls")
+    parser = argparse.ArgumentParser(description=SCRIPT_DESCRIPTION)
 
     # Inputs required from user
     parser.add_argument("instance_name", help="Nickname of the instance from stored config")
