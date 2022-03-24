@@ -2,11 +2,11 @@ import argparse
 from lhub_cli.common.output import SUPPORTED_OUTPUT_TYPES, SUPPORTED_TABLE_FORMATS
 
 
-def add_script_output_args(parser: argparse.ArgumentParser, default=None):
-    if not default:
-        default = "table"
-    elif default not in SUPPORTED_OUTPUT_TYPES:
-        raise ValueError(f"{default} is not a supported output type")
+def add_script_output_args(parser: argparse.ArgumentParser, default_output=None):
+    if not default_output:
+        default_output = "table"
+    elif default_output not in SUPPORTED_OUTPUT_TYPES:
+        raise ValueError(f"{default_output} is not a supported output type")
     output = parser.add_argument_group('output')
 
     output.add_argument(
@@ -17,12 +17,11 @@ def add_script_output_args(parser: argparse.ArgumentParser, default=None):
 
     output.add_argument(
         "-o", "--output",
-        dest="output_type",
         type=str,
         metavar="<OPTION>",
-        default=default,
+        default=default_output,
         choices=SUPPORTED_OUTPUT_TYPES,
-        help=f"Output style (default: {default}). Available output types are: {', '.join(SUPPORTED_OUTPUT_TYPES)}")
+        help=f"Output style (default: {default_output}). Available output types are: {', '.join(SUPPORTED_OUTPUT_TYPES)}")
 
     # https://github.com/astanin/python-tabulate#table-format
     output.add_argument(
