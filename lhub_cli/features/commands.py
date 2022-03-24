@@ -64,7 +64,7 @@ class Command:
                 if new_output:
                     rows[row_num]['fields'] = new_output
                 else:
-                    log.warn(f"None of the provided fields were found in the results. Returning all columns.")
+                    log.warning(f"None of the provided fields were found in the results. Returning all columns.")
         ordered_headers = []
         if rows:
             ordered_headers = [field['name'] for field in rows[0]['schema']['columns'] if field['name'] not in drop_fields]
@@ -142,7 +142,7 @@ class Command:
         reformatted, ordered_headers, warnings = self.__extract_command_results(results, fields=fields or [], drop=drop or [])
 
         for _warning in warnings:
-            log.warn(f"Warning returned: {_warning}")
+            log.warning(f"Warning returned: {_warning}")
 
         rows = split_id_from_fields(reformatted)
         if ordered_headers:
