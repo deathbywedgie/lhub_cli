@@ -143,7 +143,7 @@ class Actions:
     def _reformat_users(users: list):
         return [Actions._reformat_user(user) for user in users]
 
-    def list_users(self, attributes: list = None, print_output=True, return_results=True, show_hostname=False, hide_inactive=True, sort_order=None, **print_kwargs):
+    def list_users(self, print_output=True, return_results=True, show_hostname=False, sort_order=None, attributes: list = None, hide_inactive=True, **print_kwargs):
         supported_attributes = sorted(["is_admin", "email", "groups", "is_deleted", "is_enabled", "auth_type", "id"])
         if sort_order is None:
             sort_order = ["connection name", "username"]
