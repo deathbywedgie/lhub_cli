@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import cmd
 from .connection_manager import LogicHubConnection
 from lhub.log import Logger
