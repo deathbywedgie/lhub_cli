@@ -224,6 +224,10 @@ class LogicHubConnection:
             self.instance = instance_alias
 
     @property
+    def all_instances(self):
+        return self.config.list_configured_instances()
+
+    @property
     def instance(self):
         if not self.__instance:
             raise ValueError("Instance not set")
