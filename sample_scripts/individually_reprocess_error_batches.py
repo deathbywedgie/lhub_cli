@@ -47,11 +47,11 @@ def get_args():
 
     # Inputs expected from user
     parser.add_argument("instance_name", help="Nickname of the instance from stored config")
-    parser.add_argument("stream_id", type=int, help="Stream ID (int)")
+    parser.add_argument("stream_id", type=int, help="Stream ID (INT)")
 
     # Optional args:
+    parser.add_argument("-l", "--limit", metavar="INT", type=int, default=None, help=f"Set the maximum number of batches to reprocess (default: None)")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
-    parser.add_argument("-l", "--limit", type=int, default=None, help=f"Set the maximum number of batches to reprocess (default: None)")
 
     # take in the arguments provided by user
     _args = parser.parse_args()
