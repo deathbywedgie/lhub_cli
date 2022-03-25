@@ -20,7 +20,6 @@ def get_args():
 
     # Optional inputs
     parser.add_argument("-i", "--inactive", action="store_true", help="Include inactive users in the results")
-    # ToDo Move --debug into lhub_cli.common.args.add_script_output_args
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
 
     # Add standard output arg definitions:
