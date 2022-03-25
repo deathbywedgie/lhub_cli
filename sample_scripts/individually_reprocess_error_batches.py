@@ -89,6 +89,7 @@ class LogicHubStream:
     def __init__(self, stream_id, **kwargs):
         self.stream_id = re.sub(r'\D+', '', stream_id) if isinstance(stream_id, str) else stream_id
         self.session = lhub.LogicHub(**kwargs)
+        self.log = self.session.api.log
         print(f"Checking status of stream \"{self.stream_name}\"")
         self.update_batches()
 
@@ -149,7 +150,11 @@ class LogicHubStream:
             previous_state = batch_state
             print(f'    Running... (state: "{batch_state}" @ {floor(time.time() - job_start)} seconds)', end="\r")
             self.update_batches()
-            batch_state = self.batches.map[f'batch-{batch_id}']['state']
+            try:
+                batch_state = self.batches.map[f'batch-{batch_id}']['state']
+            except KeyError:
+                self.log.warning(f"Batch {batch_id} no longer found for stream ID {self.stream_id}")
+                continue
             if STATES[batch_state] != 'pending':
                 if batch_state in STATES_TO_REPROCESS:
                     print(f'\nWARNING: Batch {batch_id} finished with state "{batch_state}"')
@@ -164,7 +169,7 @@ class LogicHubStream:
                     break
             elif previous_state != batch_state:
                 print()
-        print(f"    Finished!  (state: \"{self.batches.map[f'batch-{batch_id}']['state']}\" @ {floor(time.time() - job_start)} seconds)      ")
+        print(f"    Finished!  (state: \"{batch_state}\" @ {floor(time.time() - job_start)} seconds)      ")
 
 
 def main():
