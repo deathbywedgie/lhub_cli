@@ -2,7 +2,7 @@ import argparse
 from lhub_cli.common.output import SUPPORTED_OUTPUT_TYPES, SUPPORTED_TABLE_FORMATS
 
 
-def add_script_output_args(parser: argparse.ArgumentParser, default_output=None):
+def add_script_output_args(parser: argparse.ArgumentParser, include_debug=True, default_output=None):
     if not default_output:
         default_output = "table"
     elif default_output not in SUPPORTED_OUTPUT_TYPES:
@@ -32,3 +32,6 @@ def add_script_output_args(parser: argparse.ArgumentParser, default_output=None)
         choices=SUPPORTED_TABLE_FORMATS,
         help=f"Table format (ignored if output type is not table). Available formats are: {', '.join(SUPPORTED_TABLE_FORMATS)}"
     )
+
+    if include_debug:
+        output.add_argument("--debug", action="store_true", help="Enable debug logging")
