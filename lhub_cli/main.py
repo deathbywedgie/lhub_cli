@@ -9,6 +9,7 @@ class LogicHubCLI:
         # ToDo:
         #  * Move the logging function out of lhub and into lhub_cli
         #  * Standardize better w/ the "logging" package
+        self.instance_name = instance_name
         self.__config = LogicHubConnection(instance_name)
         self.session = lhub.LogicHub(
             **self.__config.credentials.to_dict(),
