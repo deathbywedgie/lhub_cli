@@ -28,10 +28,7 @@ def get_args():
     lhub_cli.common.args.add_script_output_args(parser, default_output=DEFAULT_OUTPUT)
 
     _args = parser.parse_args()
-    _args.log_level = DEFAULT_LOG_LEVEL
-    if _args.debug:
-        _args.log_level = "DEBUG"
-
+    _args.log_level = "DEBUG" if _args.debug else DEFAULT_LOG_LEVEL
     return _args
 
 
