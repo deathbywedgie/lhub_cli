@@ -144,49 +144,54 @@ class Actions:
         return [Actions._reformat_user(user) for user in users]
 
     def list_users(self, print_output=True, return_results=True, show_hostname=False, sort_order=None, attributes: list = None, hide_inactive=True, **print_kwargs):
-        supported_attributes = sorted(["is_admin", "email", "groups", "is_deleted", "is_enabled", "auth_type", "id"])
+        required_columns = ["username"]
         if sort_order is None:
             sort_order = ["connection name", "username"]
         if attributes == "*":
-            attributes = supported_attributes
+            attributes = []
         attributes = attributes or []
-        fields = {a: False for a in supported_attributes}
-        for a in (attributes or []):
-            if a not in supported_attributes:
-                raise ValueError(f"{a} is not a supported attribute")
-            fields[a] = True
 
-        self.log.debug("Fetching user list")
-        result = self.lhub.actions.list_users(hide_inactive=hide_inactive)
-        self.log.debug(f"{len(result['data'])} users found")
-        output = []
-        admin_user_count = 0
-        reformatted_users = self._reformat_users(result['data'])
-        for user in reformatted_users:
-            # First column should be connection name
-            row = {"connection name": self.__config.credentials.connection_name}
+        results = self.lhub.actions.list_users(hide_inactive=hide_inactive, simple_format=True)
+        self.log.debug(f"{len([r for r in results if r['is_admin']])} admin users found")
 
-            # If hostname is enabled, it should appear second
-            if show_hostname:
-                row["hostname"] = self.lhub.api.url.server_name
+        # Update output to insert
+        stock_fields = {"connection name": self.__config.credentials.connection_name}
+        if show_hostname:
+            stock_fields["hostname"] = self.lhub.api.url.server_name
+        results = [
+            dict(**stock_fields, **{k: v for k, v in r.items() if k in required_columns or k in attributes or not attributes})
+            for r in results
+        ]
 
-            # Username should be third
-            row["username"] = user["username"]
-
-            # All other columns in order that they are requested
-            for a in attributes:
-                row[a] = user[a]
-
-            # Log how many admin users were detected
-            if user["is_admin"] and user["is_enabled"] and not user["is_deleted"]:
-                admin_user_count += 1
-
-            output.append(row)
-
-        self.log.debug(f"{admin_user_count} admin users found")
         for column in [sort_order[-1 - n] for n in range(len(sort_order))]:
-            output = sorted(output, key=lambda e: (e[column]))
+            results = sorted(results, key=lambda e: (e[column]))
         if print_output:
-            print_fancy_lists(results=output, **print_kwargs)
+            print_fancy_lists(results=results, **print_kwargs)
         if return_results:
-            return output
+            return results
+
+    def list_commands(self, print_output=True, return_results=True, show_hostname=False, sort_order=None, attributes: list = None, **print_kwargs):
+        required_columns = ["name"]
+        if sort_order is None:
+            sort_order = ["connection name", "name"]
+        if attributes == "*":
+            attributes = []
+        attributes = attributes or []
+
+        results = self.lhub.actions.list_commands(simple_format=True)
+
+        # Update output to insert
+        stock_fields = {"connection name": self.__config.credentials.connection_name}
+        if show_hostname:
+            stock_fields["hostname"] = self.lhub.api.url.server_name
+        results = [
+            dict(**stock_fields, **{k: v for k, v in r.items() if k in required_columns or k in attributes or not attributes})
+            for r in results
+        ]
+
+        for column in [sort_order[-1 - n] for n in range(len(sort_order))]:
+            results = sorted(results, key=lambda e: (e[column]))
+        if print_output:
+            print_fancy_lists(results=results, **print_kwargs)
+        if return_results:
+            return results
