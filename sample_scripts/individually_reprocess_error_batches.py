@@ -88,7 +88,8 @@ class LogicHubStream:
 
     def __init__(self, stream_id, **kwargs):
         self.stream_id = re.sub(r'\D+', '', stream_id) if isinstance(stream_id, str) else stream_id
-        self.session = lhub.LogicHub(**kwargs)
+        log_level = "DEBUG" if DEBUG_ENABLED else None
+        self.session = lhub.LogicHub(**kwargs, log_level=log_level)
         self.log = self.session.api.log
         print(f"Checking status of stream \"{self.stream_name}\"")
         self.update_batches()
