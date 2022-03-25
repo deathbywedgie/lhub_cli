@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
-import sys
+from sys import stderr
 
 import lhub_cli
 from lhub_cli.common.output import print_fancy_lists
@@ -11,6 +11,7 @@ DEFAULT_LOG_LEVEL = "INFO"
 DEFAULT_OUTPUT = "table"
 
 
+# available args and expected input
 def get_args():
     parser = argparse.ArgumentParser(description="List all users from one or more LogicHub instances")
 
@@ -42,7 +43,7 @@ def main():
         instances = args.instance_names
     else:
         config = lhub_cli.connection_manager.LogicHubConnection()
-        instances = config.all_instances
+        instances = sorted(config.all_instances)
 
     # For all available attributes, set: attributes = "*"
     # Examples: ["is_admin", "email", "groups", "is_deleted", "is_enabled", "auth_type", "id"]
@@ -56,13 +57,16 @@ def main():
 
     combined_results = []
     for n in progressbar.progressbar(range(len(instances))):
-        cli = lhub_cli.LogicHubCLI(instances[n], log_level=args.log_level)
+        cli = lhub_cli.LogicHubCLI(
+            instance_name=instances[n],
+            log_level=args.log_level
+        )
         cli.session.api.log.debug(f"Connected to {cli.instance_name}")
         combined_results.extend(
             cli.actions.list_users(
-                attributes=attributes,
                 print_output=False,
                 show_hostname=True,
+                attributes=attributes,
                 hide_inactive=show_inactive is False,
             )
         )
@@ -88,4 +92,4 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("Control-C Pressed, stopping...", file=sys.stderr)
+        print("Control-C Pressed, stopping...", file=stderr)
