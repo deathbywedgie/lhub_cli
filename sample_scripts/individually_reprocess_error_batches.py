@@ -125,6 +125,10 @@ class LogicHubStream:
         if not self._initial_batches:
             self._initial_batches = self.batches.all
 
+    @property
+    def error_batches(self):
+        return [int(re.sub(r'\D+', '', b['id'])) for b in self.batches.error]
+
     def process_batch(self, batch_dict):
         # First check whether any batches are already running
         job_start = time.time()
@@ -139,11 +143,15 @@ class LogicHubStream:
 
         batch_id = int(re.sub(r'\D+', '', batch_dict['id']))
         _initial_state = batch_dict['state']
+        self.log.debug(f"Batch reprocess requested for ID {self.log}, state={_initial_state}")
         print("ID: {batch_id} [{batch_start} - {batch_end}]".format(
             batch_id=batch_id,
             batch_start=epoch_time_to_str(batch_dict['from'] / 1000),
             batch_end=epoch_time_to_str(batch_dict['to'] / 1000)
         ))
+        if batch_id not in self.error_batches:
+            self.log.warning(f"Batch {f'batch-{batch_id}'} no longer in error state")
+            return
         _ = self.session.actions.reprocess_batch(batch_id)
         job_start = time.time()
         batch_state = self.batches.map[f'batch-{batch_id}']['state']
