@@ -18,9 +18,6 @@ def get_args():
     # Required inputs
     parser.add_argument("instance_names", nargs="*", help="Names of specific instances from stored config (default: show all)")
 
-    # Optional inputs
-    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
-
     # Add standard output arg definitions:
     #         "-f", "--file" (Also write output to a file)
     #         "-o", "--output" (Output style, e.g. table, csv, json, json-pretty)
