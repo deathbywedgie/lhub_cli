@@ -20,6 +20,7 @@ def get_args():
 
     # Optional inputs
     parser.add_argument("-i", "--inactive", action="store_true", help="Include inactive users in the results")
+    # ToDo Move --debug into lhub_cli.common.args.add_script_output_args
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
 
     # Add standard output arg definitions:
@@ -80,8 +81,8 @@ def main():
         # Enable to provide columns to keep, in order
         # ordered_headers=[],
 
-        # Set to None in order to leave all results in the default order, in the order of connections as they were requested
-        sort_order=["connection name"],
+        # Enable to provide a list of columns for custom sorting
+        # sort_order=[],
 
         # Change to False to always print output even if writing to a file
         file_only=(True if args.file else False)
