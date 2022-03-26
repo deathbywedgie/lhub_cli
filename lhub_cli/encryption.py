@@ -1,7 +1,7 @@
 import os
 import rsa
 import base64
-from lhub import exceptions
+from .exceptions.encryption import EncryptionKeyError
 
 # https://stuvel.eu/python-rsa-doc/usage.html#generating-keys
 
@@ -39,9 +39,9 @@ class Encryption:
             return
 
         if not os.path.exists(self.private_key_path):
-            raise exceptions.EncryptionKeyError(f"Found public key ({self.public_key_path}) but could not find private key ({self.private_key_path})")
+            raise EncryptionKeyError(f"Found public key ({self.public_key_path}) but could not find private key ({self.private_key_path})")
         if not os.path.exists(self.public_key_path):
-            raise exceptions.EncryptionKeyError(f"Found private key ({self.private_key_path}) but could not find public key ({self.public_key_path})")
+            raise EncryptionKeyError(f"Found private key ({self.private_key_path}) but could not find public key ({self.public_key_path})")
 
         with open(self.public_key_path, mode='rb') as _key_file:
             _public_key_text = _key_file.read()
