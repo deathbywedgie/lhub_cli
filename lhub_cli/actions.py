@@ -11,15 +11,16 @@ from .common.output import print_fancy_lists
 
 
 # ToDo NEXT: Follow the same formula from "export_playbooks" to add support for exporting other resource types as well
-#  * event types
 #  * custom lists
+#  * event types
 #  * commands
 #  * modules
 #  * custom integration
 #  * baselines
-#  * scripts (legacy)
 #  * scripts (new, used in runScript)
+#  * scripts (legacy, if the process is different)
 #  * dashboards & widgets
+#  Features without an official export ability:
 #  * cases? Probably not, but maybe...
 
 

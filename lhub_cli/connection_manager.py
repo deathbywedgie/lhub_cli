@@ -245,7 +245,3 @@ class LogicHubConnection:
 
         self.__instance = name
         self.credentials = _new_credentials
-
-        # ToDo Logic here for prompting for credentials, test them, and then save an updated credentials file
-
-        # ToDo Also use this class to invoke the LogicHub class from lhub_pw.py. When the instance is changed, create a new LogicHub instance

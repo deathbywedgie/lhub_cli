@@ -53,8 +53,6 @@ class Command:
 
             rows[row_num]['fields'] = {k: v for k, v in rows[row_num]['fields'].items() if k not in drop_fields}
 
-            # columns =
-            # rows[row_num]['columns'] = {k: v for k, v in rows[row_num]['fields'].items() if k not in drop_fields}
             if fields:
                 new_output = {}
 
