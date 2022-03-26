@@ -5,6 +5,7 @@ from lhub_cli.connection_manager import LhubConfig
 import argparse
 
 SHOW_SECURE = False
+VERIFY_SSL = None
 
 
 def get_args():
@@ -33,14 +34,15 @@ def get_args():
     # if parser.show_all:
     #     parser.instance_label = "x"
     _args = parser.parse_args()
-    _args.verify_ssl = None
+
     if not _args.show_all and not _args.instance_label:
         print("instance_label is required except with '--show_all'", file=sys.stderr)
         exit(1)
+    global VERIFY_SSL
     if _args.yes:
-        _args.verify_ssl = True
+        VERIFY_SSL = True
     if _args.no:
-        _args.verify_ssl = False
+        VERIFY_SSL = False
     return parser.parse_args()
 
 
@@ -74,7 +76,7 @@ def main():
             api_key=args.api_key,
             username=args.username,
             password=args.password,
-            verify_ssl=args.verify_ssl
+            verify_ssl=VERIFY_SSL
         )
 
     elif args.show_all:
