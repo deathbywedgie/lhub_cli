@@ -18,9 +18,6 @@ def get_args():
     # Add standard output arg definitions
     lhub_cli.common.args.add_script_output_args(parser)
 
-    # Optional args:
-    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
-
     return parser.parse_args()
 
 
@@ -40,7 +37,7 @@ results = [{"userId": r['userId'], "name": r['name'], "role": r['role']['value']
 
 print_fancy_lists(
     results,
-    output_type=args.output_type,
+    output_type=args.output,
     table_format=args.table_format,
     # ordered_headers=None,
     output_file=args.file,
