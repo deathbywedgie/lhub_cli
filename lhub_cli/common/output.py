@@ -29,6 +29,9 @@ def print_fancy_lists(results, output_type="table", table_format=None, ordered_h
     :param sort_order: optional: list of column headers to sort the results by before printing
     :type sort_order: list
 
+    :param file_only: If enabled, skip printing if an output file is specified
+    :type file_only: bool
+
     """
 
     def print_json(result_list, pretty=False):
