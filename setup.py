@@ -20,7 +20,12 @@ setup(
         "colorama",
         "progressbar2",  # Only used in sample scripts for now, and imported not as "progressbar2" but just "progressbar"
     ],
-    keywords=["python", "lhub", "LogicHub"],
+    keywords=["python", "lhub", "LogicHub", "api", "security", "cli"],
+
+    url="https://github.com/deathbywedgie/lhub_cli",
+    project_urls={
+        "Bug Tracker": "https://github.com/deathbywedgie/lhub_cli/issues",
+    },
 
     # https://pypi.org/classifiers/
     classifiers=[
