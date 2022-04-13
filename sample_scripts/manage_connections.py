@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
+import argparse
 import sys
 
+from lhub import exceptions as lhub_exceptions
+from requests.exceptions import SSLError
+
+from lhub_cli.common.shell import query_yes_no
 from lhub_cli.connection_manager import LhubConfig
-import argparse
 
 SHOW_SECURE = False
 VERIFY_SSL = None
@@ -88,8 +92,20 @@ def main():
     else:
         instance_config = config.get_instance(args.instance_label)
         if not instance_config:
-            config.create_instance(args.instance_label)
-            exit()
+            first_try = True
+            while first_try or query_yes_no("\nTry again?"):
+                first_try = False
+                # ToDo Catch more errors... what if connection is refused? Times out? Something else entirely?
+                try:
+                    config.create_instance(args.instance_label)
+                except SSLError as err:
+                    print(str(err), file=sys.stderr)
+                except lhub_exceptions.auth.APIAuthFailure:
+                    print("API token authentication failed", file=sys.stderr)
+                except lhub_exceptions.auth.PasswordAuthFailure:
+                    print("Password authentication failed", file=sys.stderr)
+                else:
+                    exit()
         print_instance_details(args.instance_label, instance_config)
 
 
