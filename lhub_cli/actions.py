@@ -8,6 +8,7 @@ import base64
 import re
 from .connection_manager import LogicHubConnection
 from .common.output import print_fancy_lists
+from numbers import Number
 
 
 # ToDo NEXT: Follow the same formula from "export_playbooks" to add support for exporting other resource types as well
@@ -157,6 +158,9 @@ class Actions:
             if 'auth_type' in r:
                 r['password_enabled'] = r['auth_type'] == "password" or isinstance(r['auth_type'], dict) and r['auth_type']['enablePasswordAuthentication'] == True
                 r['sso_enabled'] = 'samlConfigId' in r['auth_type']
+            for k, v in r.items():
+                if not isinstance(v, (str, Number)) or isinstance(v, bool):
+                    r[k] = json.dumps(v)
         self.log.debug(f"{len([r for r in results if r['is_admin']])} admin users found")
 
         # Update output to insert
