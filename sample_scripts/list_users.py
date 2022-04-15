@@ -46,7 +46,7 @@ def main():
     attributes = ["email", "is_admin", "groups"]
 
     show_inactive = args.inactive
-    if args.inactive:
+    if args.inactive and isinstance(attributes, list):
         for a in ["is_enabled", "is_deleted"]:
             if a not in attributes:
                 attributes.append(a)
