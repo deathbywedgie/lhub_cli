@@ -5,12 +5,12 @@ from .actions import Actions
 
 class LogicHubCLI:
 
-    def __init__(self, instance_name, log_level=None):
+    def __init__(self, instance_name, log_level=None, **kwargs):
         # ToDo:
         #  * Move the logging function out of lhub and into lhub_cli
         #  * Standardize better w/ the "logging" package
         self.instance_name = instance_name
-        self.__config = LogicHubConnection(instance_name)
+        self.__config = LogicHubConnection(instance_name, **kwargs)
         self.session = lhub.LogicHub(
             **self.__config.credentials.to_dict(),
             api_key=self.__config.credentials.api_key,
