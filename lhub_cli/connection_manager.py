@@ -9,6 +9,8 @@ import getpass
 from .common.config import dict_to_ini_file
 from .common.shell import query_yes_no
 from requests.exceptions import SSLError
+from .exceptions.base import CLIValueError
+import sys
 
 # Over-writable/configurable static variables
 LHUB_CONFIG_PATH = os.path.join(str(Path.home()), ".logichub")
@@ -91,14 +93,21 @@ class LhubConfig:
     __full_config: ConfigObj = None
     credentials_file_name = CREDENTIALS_FILE_NAME
 
-    def __init__(self):
+    def __init__(self, credentials_file_name=None):
+        if credentials_file_name:
+            self.credentials_file_name = f"{CREDENTIALS_FILE_NAME}-{credentials_file_name}"
         self.credentials_path = os.path.join(LHUB_CONFIG_PATH, self.credentials_file_name)
         self.__load_credentials_file()
         self.encryption = Encryption(LHUB_CONFIG_PATH)
 
     def __load_credentials_file(self):
         if not os.path.exists(self.credentials_path):
-            dict_to_ini_file({}, self.credentials_path)
+            if self.credentials_file_name != CREDENTIALS_FILE_NAME:
+                if query_yes_no(f"No credential file found by name {self.credentials_file_name}. Create new file now?"):
+                    dict_to_ini_file({}, self.credentials_path)
+                else:
+                    print("Aborted.", file=sys.stderr)
+                    sys.exit(1)
         self.__full_config = ConfigObj(self.credentials_path)
 
     def reload(self):
@@ -132,7 +141,7 @@ class LhubConfig:
     def create_instance(self, instance_label, server=None, auth_type=None, api_key=None, username=None, password=None, verify_ssl=None):
         instance_label = instance_label.strip()
         if instance_label in self.__full_config:
-            raise ValueError(f"An instance already exists by the name {instance_label}")
+            raise CLIValueError(f"An instance already exists by the name {instance_label}")
         server = server.strip() if server else None
         auth_type = auth_type.strip() if auth_type else None
         api_key = api_key.strip() if api_key else None
@@ -173,10 +182,6 @@ class LhubConfig:
             while not api_key:
                 api_key = getpass.getpass(prompt='API Token: ')
 
-        # verify_ssl = query_yes_no('Verify SSL?', 'y')
-        if verify_ssl is None:
-            verify_ssl = query_yes_no('Verify SSL?', 'y')
-
         try:
             _ = LogicHub(hostname=server, username=username, password=password, api_key=api_key, verify_ssl=verify_ssl)
         except SSLError as err:
@@ -215,8 +220,8 @@ class LogicHubConnection:
     # ToDo Hide this (dunder) when finished developing
     config: LhubConfig = None
 
-    def __init__(self, instance_alias=None):
-        self.config = LhubConfig()
+    def __init__(self, instance_alias=None, **kwargs):
+        self.config = LhubConfig(**kwargs)
         # ToDo Not yet used, but the groundwork has been laid. Revisit and enable this when ready to begin putting it to use.
         # if not self.preferences:
         #     self.preferences = Preferences()
