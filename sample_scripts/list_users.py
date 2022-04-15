@@ -43,7 +43,7 @@ def main():
 
     # For all available attributes, set: attributes = "*"
     # Examples: ["is_admin", "email", "groups", "is_deleted", "is_enabled", "auth_type", "id", "password_enabled", "sso_enabled"]
-    attributes = ["email", "is_admin", "groups"]
+    attributes = ["email", "is_admin", "groups", "password_enabled", "sso_enabled"]
 
     show_inactive = args.inactive
     if args.inactive and isinstance(attributes, list):
