@@ -10,12 +10,14 @@ class LogicHubCLI:
         #  * Move the logging function out of lhub and into lhub_cli
         #  * Standardize better w/ the "logging" package
         self.instance_name = instance_name
-        self.__config = LogicHubConnection(instance_name, **kwargs)
+        credentials_file_name = kwargs.pop("credentials_file_name", None)
+        self.__config = LogicHubConnection(instance_name, credentials_file_name=credentials_file_name)
         self.session = lhub.LogicHub(
             **self.__config.credentials.to_dict(),
             api_key=self.__config.credentials.api_key,
             password=self.__config.credentials.password,
-            log_level=log_level
+            log_level=log_level,
+            **kwargs
         )
         self.log = self.session.api.log
         self.actions = Actions(
