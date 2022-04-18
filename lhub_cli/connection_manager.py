@@ -159,14 +159,17 @@ class LhubConfig:
         while not server:
             server = input("Server hostname or IP: ").strip()
 
-        while auth_type not in ('password', 'api_key'):
-            auth_type = input('Enter "1" for password auth or "2" for API token auth:\n').strip()
-            if auth_type == '1':
-                auth_type = "password"
-            elif auth_type == '2':
-                auth_type = 'api_key'
-            else:
-                print('Invalid input\n')
+        while not auth_type:
+            auth_choices = {
+                "1": "password",
+                "2": "api_key"
+            }
+            prompt = 'Authentication options:\n'
+            for k, v in auth_choices.items():
+                prompt += f'  [{k}] {v}\n'
+            auth_type = auth_choices.get(input(prompt + '\nEnter a number to make a selection: ').strip())
+            if not auth_type:
+                print('Invalid input. Please select one of the provided options.\n')
 
         # Password auth
         if auth_type == 'password':
