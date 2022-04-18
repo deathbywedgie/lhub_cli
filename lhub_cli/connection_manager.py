@@ -69,7 +69,7 @@ class Preferences:
 @dataclass_json
 @dataclass
 class Connection:
-    # Deliberately left out password and api_token so that those sensitive fields do not show in JSON form
+    # Deliberately left out password and api_token so that those sensitive fields do not show in JSON or repr forms
     hostname: str
     username: str
     verify_ssl: bool
@@ -87,6 +87,9 @@ class Connection:
         if not self.api_key:
             assert self.password, "Neither an API key nor a password were provided in the connection config"
             assert self.username, "Username not provided"
+
+    def __str__(self):
+        return self.connection_name
 
 
 class LhubConfig:
