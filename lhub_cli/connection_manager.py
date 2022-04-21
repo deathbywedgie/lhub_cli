@@ -120,6 +120,12 @@ class LhubConfig:
         self.__credentials_file_modified_time = file_modified
         self.__full_config = ConfigObj(self.credentials_path)
 
+    @property
+    def credential_file_changed(self):
+        if self.__full_config and self.__credentials_file_modified_time == os.path.getmtime(self.credentials_path):
+            return True
+        return False
+
     def reload(self):
         # Reset file modified time so that any existing config will not be used
         self.__credentials_file_modified_time = None
@@ -256,7 +262,8 @@ class LogicHubConnection:
     @instance.setter
     def instance(self, name: str):
         name = name.strip()
-        self.config.reload()
+        if self.config.credential_file_changed:
+            self.config.reload()
         _new_credentials = self.config.get_instance(name)
         if not _new_credentials:
             print(f"No instance found by name \"{name}.\" Creating new connection...")
