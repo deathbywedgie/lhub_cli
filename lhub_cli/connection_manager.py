@@ -157,6 +157,10 @@ class LhubConfig:
         return Connection(name=instance_label, **_credentials)
 
     def create_instance(self, instance_label, server=None, auth_type=None, api_key=None, username=None, password=None, verify_ssl=None):
+
+        def verify_lhub_connection():
+            _ = LogicHub(hostname=server, username=username, password=password, api_key=api_key, verify_ssl=verify_ssl)
+
         instance_label = instance_label.strip()
         if instance_label in self.__full_config:
             raise CLIValueError(f"An instance already exists by the name {instance_label}")
@@ -204,13 +208,13 @@ class LhubConfig:
                 api_key = getpass.getpass(prompt='API Token: ')
 
         try:
-            _ = LogicHub(hostname=server, username=username, password=password, api_key=api_key, verify_ssl=verify_ssl)
+            verify_lhub_connection()
         except SSLError as err:
             verify_ssl = not query_yes_no('SSL certificate verification failed. Disable SSL verification?')
             if verify_ssl:
                 raise err
             else:
-                _ = LogicHub(hostname=server, username=username, password=password, api_key=api_key, verify_ssl=verify_ssl)
+                verify_lhub_connection()
 
         if password:
             password = self.encryption.encrypt_string(password)
