@@ -69,7 +69,7 @@ class Preferences:
 @dataclass_json
 @dataclass
 class Connection:
-    # Deliberately left out password and api_token so that those sensitive fields do not show in JSON form
+    # Deliberately left out password and api_token so that those sensitive fields do not show in JSON or repr forms
     hostname: str
     username: str
     verify_ssl: bool
@@ -87,6 +87,10 @@ class Connection:
         if not self.api_key:
             assert self.password, "Neither an API key nor a password were provided in the connection config"
             assert self.username, "Username not provided"
+
+    # Make it possible to represent a Connection object simply as a string in order to see the connection name
+    def __str__(self):
+        return self.connection_name
 
 
 class LhubConfig:
@@ -159,14 +163,17 @@ class LhubConfig:
         while not server:
             server = input("Server hostname or IP: ").strip()
 
-        while auth_type not in ('password', 'api_key'):
-            auth_type = input('Enter "1" for password auth or "2" for API token auth:\n').strip()
-            if auth_type == '1':
-                auth_type = "password"
-            elif auth_type == '2':
-                auth_type = 'api_key'
-            else:
-                print('Invalid input\n')
+        while not auth_type:
+            auth_choices = {
+                "1": "password",
+                "2": "api_key"
+            }
+            prompt = 'Authentication options:\n'
+            for k, v in auth_choices.items():
+                prompt += f'  [{k}] {v}\n'
+            auth_type = auth_choices.get(input(prompt + '\nEnter a number to make a selection: ').strip())
+            if not auth_type:
+                print('Invalid input. Please select one of the provided options.\n')
 
         # Password auth
         if auth_type == 'password':

@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.0.6.8'
+VERSION = '0.0.6.9'
 
 setup(
     name="lhub_cli",
