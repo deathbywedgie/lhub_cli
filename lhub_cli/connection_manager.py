@@ -169,7 +169,7 @@ class LhubConfig:
         api_key = api_key.strip() if api_key else None
         username = username.strip() if username else None
         password = password.strip() if password else None
-        verify_ssl = verify_ssl if isinstance(verify_ssl, bool) else None
+        verify_ssl = verify_ssl if verify_ssl is False else None
 
         if password and not api_key:
             # If a password was provided but no API key, assume password auth
@@ -193,6 +193,10 @@ class LhubConfig:
             if not auth_type:
                 print('Invalid input. Please select one of the provided options.\n')
 
+        # Grouping the inputs meant for update_connection so that verify_ssl can be left out entirely if it is not disabled.
+        # This way it only gets stored in the credentials file if it needs to be disabled.
+        connection_kwargs = {"instance_label": instance_label, "hostname": server, "verify_ssl": verify_ssl, "username": username, "password": None, "api_key": None}
+
         # Password auth
         if auth_type == 'password':
             api_key = None
@@ -200,12 +204,14 @@ class LhubConfig:
                 username = input("Username: ")
             while not password:
                 password = getpass.getpass()
+            connection_kwargs.update({"username": username, "password": self.encryption.encrypt_string(password)})
 
         # API token auth
         else:
             username = password = None
             while not api_key:
                 api_key = getpass.getpass(prompt='API Token: ')
+            connection_kwargs["api_key"] = self.encryption.encrypt_string(api_key)
 
         try:
             verify_lhub_connection()
@@ -214,14 +220,12 @@ class LhubConfig:
             if verify_ssl:
                 raise err
             else:
+                connection_kwargs['verify_ssl'] = verify_ssl
                 verify_lhub_connection()
 
-        if password:
-            password = self.encryption.encrypt_string(password)
-            self.update_connection(instance_label, hostname=server, username=username, password=password, verify_ssl=verify_ssl)
-        else:
-            api_key = self.encryption.encrypt_string(api_key)
-            self.update_connection(instance_label, hostname=server, api_key=api_key, verify_ssl=verify_ssl)
+        # Drop any empty keys from kwargs before submitting
+        connection_kwargs = {k: v for k, v in connection_kwargs.items() if v is not None}
+        self.update_connection(**connection_kwargs)
         self.reload()
 
     def list_configured_instances(self):
