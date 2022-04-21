@@ -88,6 +88,7 @@ class Connection:
             assert self.password, "Neither an API key nor a password were provided in the connection config"
             assert self.username, "Username not provided"
 
+    # Make it possible to represent a Connection object simply as a string in order to see the connection name
     def __str__(self):
         return self.connection_name
 
