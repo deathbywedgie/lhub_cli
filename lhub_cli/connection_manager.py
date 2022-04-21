@@ -96,6 +96,7 @@ class Connection:
 class LhubConfig:
     __full_config: ConfigObj = None
     credentials_file_name = CREDENTIALS_FILE_NAME
+    __credentials_file_modified_time = None
 
     def __init__(self, credentials_file_name=None):
         if credentials_file_name:
@@ -112,9 +113,16 @@ class LhubConfig:
                 else:
                     print("Aborted.", file=sys.stderr)
                     sys.exit(1)
+        # Check the time the file was last modified
+        file_modified = os.path.getmtime(self.credentials_path)
+        if self.__full_config and self.__credentials_file_modified_time == file_modified:
+            return
+        self.__credentials_file_modified_time = file_modified
         self.__full_config = ConfigObj(self.credentials_path)
 
     def reload(self):
+        # Reset file modified time so that any existing config will not be used
+        self.__credentials_file_modified_time = None
         self.__load_credentials_file()
 
     def update_connection(self, instance_label, **kwargs):
