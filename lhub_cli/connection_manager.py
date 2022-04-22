@@ -105,11 +105,15 @@ class LhubConfig:
         self.__load_credentials_file()
         self.encryption = Encryption(LHUB_CONFIG_PATH)
 
+    def write_credential_file(self, explicit_config: dict = None):
+        dict_to_ini_file(explicit_config or self.__full_config.dict(), self.credentials_path)
+        self.reload()
+
     def __load_credentials_file(self):
         if not os.path.exists(self.credentials_path):
             if self.credentials_file_name != CREDENTIALS_FILE_NAME:
                 if query_yes_no(f"No credential file found by name {self.credentials_file_name}. Create new file now?"):
-                    dict_to_ini_file({}, self.credentials_path)
+                    self.write_credential_file(explicit_config={})
                 else:
                     print("Aborted.", file=sys.stderr)
                     sys.exit(1)
@@ -136,14 +140,14 @@ class LhubConfig:
             self.__full_config[instance_label] = kwargs
         else:
             self.__full_config[instance_label].update(kwargs)
-        dict_to_ini_file(self.__full_config.dict(), self.credentials_path)
+        self.write_credential_file()
 
     def delete_connection(self, instance_label):
         if not self.__full_config.get(instance_label):
             return
         else:
             del self.__full_config[instance_label]
-        dict_to_ini_file(self.__full_config.dict(), self.credentials_path)
+        self.write_credential_file()
 
     def get_instance(self, instance_label):
         if instance_label not in self.__full_config:
@@ -226,7 +230,6 @@ class LhubConfig:
         # Drop any empty keys from kwargs before submitting
         connection_kwargs = {k: v for k, v in connection_kwargs.items() if v is not None}
         self.update_connection(**connection_kwargs)
-        self.reload()
 
     def list_configured_instances(self):
         return sorted(self.__full_config.dict().keys())
