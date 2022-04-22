@@ -144,6 +144,7 @@ class LhubConfig:
 
     def delete_connection(self, instance_label):
         if not self.__full_config.get(instance_label):
+            print(f"No connection found for label: {instance_label}", file=sys.stderr)
             return
         else:
             del self.__full_config[instance_label]
@@ -153,6 +154,7 @@ class LhubConfig:
         if self.credential_file_changed:
             self.reload()
         if instance_label not in self.__full_config:
+            print(f"No connection found for label: {instance_label}", file=sys.stderr)
             return
         # Make a copy of the dict, otherwise this will only work once, and it
         # will fail with a decryption error any subsequent calls for the same instance
