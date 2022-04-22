@@ -150,6 +150,8 @@ class LhubConfig:
         self.write_credential_file()
 
     def get_instance(self, instance_label):
+        if self.credential_file_changed:
+            self.reload()
         if instance_label not in self.__full_config:
             return
         # Make a copy of the dict, otherwise this will only work once, and it
@@ -273,8 +275,6 @@ class LogicHubConnection:
     @instance.setter
     def instance(self, name: str):
         name = name.strip()
-        if self.config.credential_file_changed:
-            self.config.reload()
         _new_credentials = self.config.get_instance(name)
         if not _new_credentials:
             print(f"No instance found by name \"{name}.\" Creating new connection...")
