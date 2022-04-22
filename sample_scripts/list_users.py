@@ -59,7 +59,7 @@ def main():
             log_level=args.log_level,
             credentials_file_name=args.credentials_file_name
         )
-        cli.session.api.log.debug(f"Connected to {cli.instance_name}")
+        cli.log.debug(f"Connected to {cli.instance_name}")
         combined_results.extend(
             cli.actions.list_users(
                 print_output=False,
