@@ -33,8 +33,7 @@ setup(
         "Intended Audience :: End Users/Desktop",
         "Intended Audience :: System Administrators",
         "Intended Audience :: Information Technology",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.10",
         "Natural Language :: English",
     ]
 )
