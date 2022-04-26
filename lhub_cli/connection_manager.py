@@ -130,6 +130,8 @@ class LhubConfig:
                 else:
                     print("Aborted.", file=sys.stderr)
                     sys.exit(1)
+            else:
+                self.write_credential_file(explicit_config={})
         # Check the time the file was last modified
         file_modified = os.path.getmtime(self.credentials_path)
         if self.__full_config and self.__credentials_file_modified_time == file_modified:
