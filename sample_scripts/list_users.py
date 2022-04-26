@@ -57,21 +57,29 @@ def main():
                 attributes.append(a)
 
     combined_results = []
-    for n in progressbar.progressbar(range(len(instances))):
-        cli = lhub_cli.LogicHubCLI(
-            instance_name=instances[n],
-            log_level=args.log_level,
-            credentials_file_name=args.credentials_file_name
-        )
-        cli.log.debug(f"Connected to {cli.instance_name}")
-        combined_results.extend(
-            cli.actions.list_users(
-                print_output=False,
-                show_hostname=True,
-                attributes=attributes,
-                hide_inactive=show_inactive is False,
+    if instances:
+        instance_sessions = {}
+        print(f"Verifying connections")
+        for n in progressbar.progressbar(range(len(instances))):
+            instance_sessions[instances[n]] = lhub_cli.LogicHubCLI(
+                instance_name=instances[n],
+                log_level=args.log_level,
+                credentials_file_name=args.credentials_file_name
             )
-        )
+
+        print(f"Fetching users")
+        for n in progressbar.progressbar(range(len(instances))):
+            _instance = instances[n]
+            cli = instance_sessions[instances[n]]
+            cli.log.debug(f"Connected to {cli.instance_name}")
+            combined_results.extend(
+                cli.actions.list_users(
+                    print_output=False,
+                    show_hostname=True,
+                    attributes=attributes,
+                    hide_inactive=show_inactive is False,
+                )
+            )
 
     print_fancy_lists(
         results=combined_results,
