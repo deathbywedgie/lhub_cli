@@ -13,11 +13,15 @@ DEFAULT_OUTPUT = "table"
 
 # available args and expected input
 def get_args():
+    starting_config = lhub_cli.LogicHubConnection()
+    existing_creds_str = ''
+    if starting_config.config.existing_credential_files:
+        existing_creds_str = f', existing: {starting_config.config.existing_credential_files}'
     parser = argparse.ArgumentParser(description="List all users from one or more LogicHub instances")
 
     # Required inputs
     parser.add_argument("instance_names", nargs="*", help="Names of specific instances from stored config (default: show all)")
-    parser.add_argument("-cred", "--credentials_file_name", default=None, help="Alternate credentials file name to use (default: \"credentials\")")
+    parser.add_argument("-cred", "--credentials_file_name", default=None, help=f"Alternate credentials file name to use (default: \"credentials\"{existing_creds_str})")
 
     # Optional inputs
     parser.add_argument("-i", "--inactive", action="store_true", help="Include inactive users in the results")
