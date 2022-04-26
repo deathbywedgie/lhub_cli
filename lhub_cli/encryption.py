@@ -2,6 +2,7 @@ import os
 import rsa
 import base64
 from .exceptions.encryption import EncryptionKeyError
+from .exceptions.base import PathNotFound
 
 # https://stuvel.eu/python-rsa-doc/usage.html#generating-keys
 
@@ -12,7 +13,7 @@ class Encryption:
 
     def __init__(self, key_location, private_key_name=None, pub_file_name=None):
         if not os.path.exists(key_location):
-            raise IOError(f"Key location does not exist: {key_location}")
+            raise PathNotFound(path=key_location, message=f"Key location does not exist: {key_location}")
         self.key_location = key_location
 
         self.private_key_path = os.path.join(
