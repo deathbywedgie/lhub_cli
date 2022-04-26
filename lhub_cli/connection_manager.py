@@ -99,7 +99,7 @@ class LhubConfig:
     __credentials_file_modified_time = None
 
     def __init__(self, credentials_file_name=None):
-        if credentials_file_name:
+        if credentials_file_name and credentials_file_name != self.credentials_file_name:
             self.credentials_file_name = f"{CREDENTIALS_FILE_NAME}-{credentials_file_name}"
         self.credentials_path = os.path.join(LHUB_CONFIG_PATH, self.credentials_file_name)
         self.__load_credentials_file()
