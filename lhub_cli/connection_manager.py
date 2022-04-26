@@ -17,10 +17,6 @@ LHUB_CONFIG_PATH = os.path.join(str(Path.home()), ".logichub")
 CREDENTIALS_FILE_NAME = "credentials"
 PREFERENCES_FILE_NAME = "preferences"
 
-# Ensure that the path exists
-__lhub_path = Path(LHUB_CONFIG_PATH)
-__lhub_path.mkdir(parents=True, exist_ok=True)
-
 
 @dataclass_json
 @dataclass
@@ -99,6 +95,11 @@ class LhubConfig:
     __credentials_file_modified_time = None
 
     def __init__(self, credentials_file_name=None):
+        if not os.path.exists(LHUB_CONFIG_PATH):
+            print(f"Default config path not found. Creating: {LHUB_CONFIG_PATH}")
+            __lhub_path = Path(LHUB_CONFIG_PATH)
+            __lhub_path.mkdir(parents=True, exist_ok=True)
+
         if credentials_file_name and credentials_file_name != self.credentials_file_name:
             self.credentials_file_name = f"{CREDENTIALS_FILE_NAME}-{credentials_file_name}"
         self.credentials_path = os.path.join(LHUB_CONFIG_PATH, self.credentials_file_name)
