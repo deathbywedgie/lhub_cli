@@ -1,26 +1,29 @@
 import cmd
+from lhub import LogicHub
 from .connection_manager import LogicHubConnection
 from .log import DefaultLogger
 from colorama import init as init_colorama
 from colorama import Fore, Back, Style
 
-log = DefaultLogger()
 init_colorama()
 
 
-# ToDo make sure Shell.session doesn't have to be set explicitly in order to use this
 class Shell(cmd.Cmd):
     # Override the default prompt of "(cmd) "
     # prompt = "(logichub) "
     # Fancy colorful version
     # prompt = '\x1b[6;30;47m' + 'Logic' + '\x1b[6;31;47m' + 'Hub' + '\x1b[0m % '
     prompt = Fore.BLACK + Back.WHITE + 'Logic' + Fore.RED + 'Hub' + Style.RESET_ALL + ' % '
-    session: LogicHubConnection = None
+    connection: LogicHubConnection = None
+    session: LogicHub = None
 
-    def __init__(self):
+    def __init__(self, logger=None, log_level=None):
         super().__init__()
-        if not self.session:
-            self.session = LogicHubConnection()
+        self.log = logger or DefaultLogger()
+        if log_level:
+            self.log.setLevel(log_level)
+        if not self.connection:
+            self.connection = LogicHubConnection(logger=self.log)
 
     # ToDo Finish or remove; overriding in order to try to allow keyboard interrupts
     def cmdloop(self, intro=None):
@@ -86,13 +89,13 @@ class Shell(cmd.Cmd):
     def do_info(self, *args):
         """ Show current session info """
         try:
-            print(f"Instance selected: {self.session.instance}")
+            print(f"Instance selected: {self.connection.instance}")
         except ValueError:
             print("No instance selected")
         else:
-            self.session.config.list_configured_instances()
-            print(f"Credentials: {self.session.credentials}")
-            print(dir(self.session.config))
+            self.connection.config.list_configured_instances()
+            print(f"Credentials: {self.connection.credentials}")
+            print(dir(self.connection.config))
 
     def do_connect(self, instance):
         """
@@ -101,9 +104,15 @@ class Shell(cmd.Cmd):
         :param instance: Alias for the instance to which you want to connect
         :return:
         """
-        log.info(f"Connecting to instance {instance}")
-        self.session.instance = instance
-        log.info(f"Connected")
+        self.log.info(f"Connecting to instance {instance}")
+        self.connection.instance = instance
+        self.session = LogicHub(
+            password=self.connection.credentials.password,
+            api_key=self.connection.credentials.api_key,
+            **self.connection.credentials.to_dict(),
+            logger=self.log
+        )
+        self.log.info(f"Connected")
 
     # I want the user to be able to type "exit" instead of having to type "EOF"
     def do_exit(self, line=None):
