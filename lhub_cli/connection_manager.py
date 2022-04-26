@@ -106,7 +106,9 @@ class LhubConfig:
         self.encryption = Encryption(LHUB_CONFIG_PATH)
 
     def write_credential_file(self, explicit_config: dict = None):
-        dict_to_ini_file(explicit_config or self.__full_config.dict(), self.credentials_path)
+        if explicit_config is None:
+            explicit_config = self.__full_config.dict()
+        dict_to_ini_file(explicit_config, self.credentials_path)
         self.reload()
 
     def __load_credentials_file(self):
