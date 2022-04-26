@@ -32,11 +32,13 @@ class Encryption:
     def load_keys(self):
         # If no existing keys are found stored at the expected location, generate new ones
         if not os.path.exists(self.private_key_path) and not os.path.exists(self.public_key_path):
+            print("Existing encryption keys not found. Please wait while new keys are generated.")
             self._public_key, self.__private_key = rsa.newkeys(4096)
             with open(self.public_key_path, "w+") as _key_file:
                 _key_file.write(self._public_key.save_pkcs1().decode())
             with open(self.private_key_path, "w+") as _key_file:
                 _key_file.write(self.__private_key.save_pkcs1().decode())
+            print("Keys successfully generated.")
             return
 
         if not os.path.exists(self.private_key_path):
