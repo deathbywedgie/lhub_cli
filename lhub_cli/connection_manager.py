@@ -106,6 +106,16 @@ class LhubConfig:
         self.__load_credentials_file()
         self.encryption = Encryption(LHUB_CONFIG_PATH)
 
+    @property
+    def existing_credential_files(self):
+        return [CREDENTIALS_FILE_NAME] + sorted(list(set(
+            [
+                f.removeprefix(f'{CREDENTIALS_FILE_NAME}-')
+                for f in os.listdir(LHUB_CONFIG_PATH)
+                if f.startswith(f'{CREDENTIALS_FILE_NAME}-')
+            ]
+        )))
+
     def write_credential_file(self, explicit_config: dict = None):
         if explicit_config is None:
             explicit_config = self.__full_config.dict()
