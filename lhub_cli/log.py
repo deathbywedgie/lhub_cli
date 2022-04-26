@@ -4,6 +4,11 @@ _LOG_LEVEL_MAP = {"debug": 7, "info": 6, "notice": 5, "warn": 4, "error": 3, "cr
 LOG_LEVELS = _LOG_LEVEL_MAP.keys()
 
 
+def generate_log_session_id(obj):
+    id_str = str(hex(id(obj)))
+    return id_str.removeprefix('0x')
+
+
 # ToDo Placeholder for real logging: figure out how to do the same w/ the logger package and get rid of this
 class DefaultLogger:
     __log_level = "INFO"
@@ -11,11 +16,9 @@ class DefaultLogger:
 
     def __init__(self, session_prefix=None, log_level=None):
         self.log_level = log_level if log_level else self.default_log_level
-        # self.session_prefix = session_prefix or ""
-        self.session_prefix = (session_prefix or self.generate_logger_prefix()).strip()
-
-    def generate_logger_prefix(self):
-        return f"[{hex(id(self))}] "
+        self.session_prefix = (session_prefix if session_prefix is not None else generate_log_session_id(self)).strip()
+        if self.session_prefix:
+            self.session_prefix = f"[{self.session_prefix}] "
 
     @property
     def log_level(self):
@@ -29,12 +32,16 @@ class DefaultLogger:
             raise ValueError(f"Invalid log level: {val}")
         self.__log_level = val.upper()
 
+    # temporary to make this fit logging package as closely as possible until we phase this out
+    def setLevel(self, level: str):
+        self.log_level = level
+
     def __print(self, level, msg):
         level_num = _LOG_LEVEL_MAP[level.lower()]
         output_file = sys.stdout if level_num >= 5 else sys.stderr
         current_level_num = _LOG_LEVEL_MAP[self.log_level.lower()]
         if current_level_num >= level_num:
-            print(f"[{level.upper()}] {self.session_prefix} {msg}", file=output_file)
+            print(f"{self.session_prefix}[{level.upper()}] {msg}", file=output_file)
         if level_num == 0:
             sys.exit(1)
 
@@ -49,6 +56,9 @@ class DefaultLogger:
 
     def warning(self, msg):
         self.__print("warn", msg)
+
+    def warn(self, msg):
+        self.warning(msg)
 
     def error(self, msg):
         self.__print("error", msg)

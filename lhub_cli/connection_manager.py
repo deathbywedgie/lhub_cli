@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from dataclasses_json import dataclass_json
 from lhub import LogicHub
 from .encryption import Encryption
+from .log import DefaultLogger
 import getpass
 from .common.config import dict_to_ini_file
 from .common.shell import query_yes_no
@@ -94,7 +95,10 @@ class LhubConfig:
     credentials_file_name = CREDENTIALS_FILE_NAME
     __credentials_file_modified_time = None
 
-    def __init__(self, credentials_file_name=None):
+    def __init__(self, credentials_file_name=None, logger=None, log_level=None):
+        self.__log = logger or DefaultLogger()
+        if log_level:
+            self.__log.setLevel(log_level)
         if not os.path.exists(LHUB_CONFIG_PATH):
             print(f"Default config path not found. Creating: {LHUB_CONFIG_PATH}")
             __lhub_path = Path(LHUB_CONFIG_PATH)
@@ -271,8 +275,11 @@ class LogicHubConnection:
     # ToDo Hide this (dunder) when finished developing
     config: LhubConfig = None
 
-    def __init__(self, instance_alias=None, **kwargs):
-        self.config = LhubConfig(**kwargs)
+    def __init__(self, instance_alias=None, logger=None, log_level=None, **kwargs):
+        self.__log = logger or DefaultLogger()
+        if log_level:
+            self.__log.setLevel(log_level)
+        self.config = LhubConfig(logger=self.__log, **kwargs)
         # ToDo Not yet used, but the groundwork has been laid. Revisit and enable this when ready to begin putting it to use.
         # if not self.preferences:
         #     self.preferences = Preferences()

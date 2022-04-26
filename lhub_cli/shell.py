@@ -1,10 +1,10 @@
 import cmd
 from .connection_manager import LogicHubConnection
-from lhub.log import Logger
+from .log import DefaultLogger
 from colorama import init as init_colorama
 from colorama import Fore, Back, Style
 
-log = Logger()
+log = DefaultLogger()
 init_colorama()
 
 

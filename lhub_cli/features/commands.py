@@ -1,12 +1,10 @@
 from lhub import LogicHub
-from lhub.log import Logger
+from ..log import DefaultLogger
 from lhub.common.dicts_and_lists import to_dict_recursive
 import json
 from tabulate import tabulate, tabulate_formats
 import csv
 import os
-
-log = Logger()
 
 # Quick reference for external scripts
 TABLE_FORMATS = tabulate_formats
@@ -20,7 +18,10 @@ class Command:
     verify_ssl = True
     lhub_hidden_fields = ["lhub_page_num", "lhub_id"]
 
-    def __init__(self, session: LogicHub, verify_ssl=True, output_type: str = None, table_format: str = None):
+    def __init__(self, session: LogicHub, verify_ssl=True, output_type: str = None, table_format: str = None, logger=None, log_level=None):
+        self.__log = logger or DefaultLogger()
+        if log_level:
+            self.__log.setLevel(log_level)
         if output_type:
             self.output_type = output_type
         if isinstance(verify_ssl, bool):
@@ -62,11 +63,11 @@ class Command:
                 if new_output:
                     rows[row_num]['fields'] = new_output
                 else:
-                    log.warning(f"None of the provided fields were found in the results. Returning all columns.")
+                    self.__log.warning(f"None of the provided fields were found in the results. Returning all columns.")
         ordered_headers = []
         if rows:
             ordered_headers = [field['name'] for field in rows[0]['schema']['columns'] if field['name'] not in drop_fields]
-        log.debug(f"Non-result response: {json.dumps(response)}")
+        self.__log.debug(f"Non-result response: {json.dumps(response)}")
         return rows, ordered_headers, warnings
 
     def print_command_results(self, results, fields: list = None, drop: list = None, output_file: str = None):
@@ -75,7 +76,7 @@ class Command:
             for row in result_list:
                 _id = row['id']
                 _fields = row['fields']
-                log.debug(f"Processing correlation ID: {_id}")
+                self.__log.debug(f"Processing correlation ID: {_id}")
                 output.append(_fields)
             return output
 
@@ -89,7 +90,7 @@ class Command:
 
         def _print_table(result_list):
             if not result_list:
-                log.debug("Empty results")
+                self.__log.debug("Empty results")
             _keys = result_list[0].keys() if result_list else ['no results']
             kwargs = {
                 "tabular_data": [x.values() for x in result_list],
@@ -140,7 +141,7 @@ class Command:
         reformatted, ordered_headers, warnings = self.__extract_command_results(results, fields=fields or [], drop=drop or [])
 
         for _warning in warnings:
-            log.warning(f"Warning returned: {_warning}")
+            self.__log.warning(f"Warning returned: {_warning}")
 
         rows = split_id_from_fields(reformatted)
         if ordered_headers:
