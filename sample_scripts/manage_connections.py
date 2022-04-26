@@ -18,7 +18,8 @@ def get_args():
 
     parser.add_argument("-cred", "--credentials_file_name", default=None, help="Alternate credentials file name to use (default: \"credentials\")")
 
-    parser.add_argument("--show_secure", action="store_true", help="Optional: include passwords and API tokens in output", default=None)
+    parser.add_argument("--show_secure", action="store_true", help="Optional: include passwords and API tokens in output")
+    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
 
     mgmt = parser.add_mutually_exclusive_group()
     mgmt.add_argument('--show_all', action="store_true", help="Show all connections")
@@ -61,7 +62,8 @@ def main():
     args = get_args()
     if args.show_secure:
         SHOW_SECURE = True
-    config = LhubConfig(credentials_file_name=args.credentials_file_name)
+    log_level = "DEBUG" if args.debug else None
+    config = LhubConfig(credentials_file_name=args.credentials_file_name, log_level=log_level)
 
     try:
         if args.delete:
@@ -69,7 +71,7 @@ def main():
             config.delete_connection(args.delete)
 
         elif args.create:
-            print(f"Creating instance: {args.create}")
+            print(f"Attempting to create instance: {args.create}")
             config.create_instance(
                 instance_label=args.create,
                 server=args.server,

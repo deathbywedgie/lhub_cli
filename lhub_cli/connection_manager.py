@@ -132,7 +132,7 @@ class LhubConfig:
                 if query_yes_no(f"No credential file found by name {self.credentials_file_name}. Create new file now?"):
                     self.write_credential_file(explicit_config={})
                 else:
-                    print("Aborted.", file=sys.stderr)
+                    self.__log.fatal("Aborted by user.")
                     sys.exit(1)
             else:
                 self.write_credential_file(explicit_config={})
@@ -163,9 +163,10 @@ class LhubConfig:
 
     def delete_connection(self, instance_label):
         if not self.__full_config.get(instance_label):
-            print(f"No connection found for label: {instance_label}", file=sys.stderr)
+            self.__log.error(f"No connection found: {instance_label=}")
             return
         else:
+            self.__log.debug(f"Deleting connection: {instance_label=}")
             del self.__full_config[instance_label]
         self.write_credential_file()
 
@@ -173,7 +174,7 @@ class LhubConfig:
         if self.credential_file_changed:
             self.reload()
         if instance_label not in self.__full_config:
-            print(f"No connection found for label: {instance_label}", file=sys.stderr)
+            self.__log.error(f"No connection found: {instance_label=}")
             return
         # Make a copy of the dict, otherwise this will only work once, and it
         # will fail with a decryption error any subsequent calls for the same instance
@@ -186,6 +187,8 @@ class LhubConfig:
     def create_instance(self, instance_label, server=None, auth_type=None, api_key=None, username=None, password=None, verify_ssl=None):
 
         def verify_lhub_connection():
+            verify = True if verify_ssl is None else verify_ssl
+            self.__log.debug(f"Testing connectivity and authentication: {server=} {username=} {verify=}")
             _ = LogicHub(hostname=server, username=username, password=password, api_key=api_key, verify_ssl=verify_ssl)
 
         instance_label = instance_label.strip()
