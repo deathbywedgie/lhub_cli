@@ -17,10 +17,6 @@ LHUB_CONFIG_PATH = os.path.join(str(Path.home()), ".logichub")
 CREDENTIALS_FILE_NAME = "credentials"
 PREFERENCES_FILE_NAME = "preferences"
 
-# Ensure that the path exists
-__lhub_path = Path(LHUB_CONFIG_PATH)
-__lhub_path.mkdir(parents=True, exist_ok=True)
-
 
 @dataclass_json
 @dataclass
@@ -96,25 +92,62 @@ class Connection:
 class LhubConfig:
     __full_config: ConfigObj = None
     credentials_file_name = CREDENTIALS_FILE_NAME
+    __credentials_file_modified_time = None
 
     def __init__(self, credentials_file_name=None):
-        if credentials_file_name:
+        if not os.path.exists(LHUB_CONFIG_PATH):
+            print(f"Default config path not found. Creating: {LHUB_CONFIG_PATH}")
+            __lhub_path = Path(LHUB_CONFIG_PATH)
+            __lhub_path.mkdir(parents=True, exist_ok=True)
+
+        if credentials_file_name and credentials_file_name != self.credentials_file_name:
             self.credentials_file_name = f"{CREDENTIALS_FILE_NAME}-{credentials_file_name}"
         self.credentials_path = os.path.join(LHUB_CONFIG_PATH, self.credentials_file_name)
         self.__load_credentials_file()
         self.encryption = Encryption(LHUB_CONFIG_PATH)
 
+    @property
+    def existing_credential_files(self):
+        return [CREDENTIALS_FILE_NAME] + sorted(list(set(
+            [
+                f.removeprefix(f'{CREDENTIALS_FILE_NAME}-')
+                for f in os.listdir(LHUB_CONFIG_PATH)
+                if f.startswith(f'{CREDENTIALS_FILE_NAME}-')
+            ]
+        )))
+
+    def write_credential_file(self, explicit_config: dict = None):
+        if explicit_config is None:
+            explicit_config = self.__full_config.dict()
+        dict_to_ini_file(explicit_config, self.credentials_path)
+        self.reload()
+
     def __load_credentials_file(self):
         if not os.path.exists(self.credentials_path):
             if self.credentials_file_name != CREDENTIALS_FILE_NAME:
                 if query_yes_no(f"No credential file found by name {self.credentials_file_name}. Create new file now?"):
-                    dict_to_ini_file({}, self.credentials_path)
+                    self.write_credential_file(explicit_config={})
                 else:
                     print("Aborted.", file=sys.stderr)
                     sys.exit(1)
+            else:
+                self.write_credential_file(explicit_config={})
+        # Check the time the file was last modified
+        file_modified = os.path.getmtime(self.credentials_path)
+        if self.__full_config and self.__credentials_file_modified_time == file_modified:
+            return
+        self.__credentials_file_modified_time = file_modified
         self.__full_config = ConfigObj(self.credentials_path)
 
+    @property
+    def credential_file_changed(self):
+        if self.__full_config and self.__credentials_file_modified_time == os.path.getmtime(self.credentials_path):
+            return True
+        return False
+
     def reload(self):
+        # Reset file modified time so that any existing config will not be used
+        self.__credentials_file_modified_time = None
         self.__load_credentials_file()
 
     def update_connection(self, instance_label, **kwargs):
@@ -122,17 +155,21 @@ class LhubConfig:
             self.__full_config[instance_label] = kwargs
         else:
             self.__full_config[instance_label].update(kwargs)
-        dict_to_ini_file(self.__full_config.dict(), self.credentials_path)
+        self.write_credential_file()
 
     def delete_connection(self, instance_label):
         if not self.__full_config.get(instance_label):
+            print(f"No connection found for label: {instance_label}", file=sys.stderr)
             return
         else:
             del self.__full_config[instance_label]
-        dict_to_ini_file(self.__full_config.dict(), self.credentials_path)
+        self.write_credential_file()
 
     def get_instance(self, instance_label):
+        if self.credential_file_changed:
+            self.reload()
         if instance_label not in self.__full_config:
+            print(f"No connection found for label: {instance_label}", file=sys.stderr)
             return
         # Make a copy of the dict, otherwise this will only work once, and it
         # will fail with a decryption error any subsequent calls for the same instance
@@ -143,6 +180,10 @@ class LhubConfig:
         return Connection(name=instance_label, **_credentials)
 
     def create_instance(self, instance_label, server=None, auth_type=None, api_key=None, username=None, password=None, verify_ssl=None):
+
+        def verify_lhub_connection():
+            _ = LogicHub(hostname=server, username=username, password=password, api_key=api_key, verify_ssl=verify_ssl)
+
         instance_label = instance_label.strip()
         if instance_label in self.__full_config:
             raise CLIValueError(f"An instance already exists by the name {instance_label}")
@@ -151,7 +192,7 @@ class LhubConfig:
         api_key = api_key.strip() if api_key else None
         username = username.strip() if username else None
         password = password.strip() if password else None
-        verify_ssl = verify_ssl if isinstance(verify_ssl, bool) else None
+        verify_ssl = verify_ssl if verify_ssl is False else None
 
         if password and not api_key:
             # If a password was provided but no API key, assume password auth
@@ -175,6 +216,10 @@ class LhubConfig:
             if not auth_type:
                 print('Invalid input. Please select one of the provided options.\n')
 
+        # Grouping the inputs meant for update_connection so that verify_ssl can be left out entirely if it is not disabled.
+        # This way it only gets stored in the credentials file if it needs to be disabled.
+        connection_kwargs = {"instance_label": instance_label, "hostname": server, "verify_ssl": verify_ssl, "username": username, "password": None, "api_key": None}
+
         # Password auth
         if auth_type == 'password':
             api_key = None
@@ -182,29 +227,28 @@ class LhubConfig:
                 username = input("Username: ")
             while not password:
                 password = getpass.getpass()
+            connection_kwargs.update({"username": username, "password": self.encryption.encrypt_string(password)})
 
         # API token auth
         else:
             username = password = None
             while not api_key:
                 api_key = getpass.getpass(prompt='API Token: ')
+            connection_kwargs["api_key"] = self.encryption.encrypt_string(api_key)
 
         try:
-            _ = LogicHub(hostname=server, username=username, password=password, api_key=api_key, verify_ssl=verify_ssl)
+            verify_lhub_connection()
         except SSLError as err:
             verify_ssl = not query_yes_no('SSL certificate verification failed. Disable SSL verification?')
             if verify_ssl:
                 raise err
             else:
-                _ = LogicHub(hostname=server, username=username, password=password, api_key=api_key, verify_ssl=verify_ssl)
+                connection_kwargs['verify_ssl'] = verify_ssl
+                verify_lhub_connection()
 
-        if password:
-            password = self.encryption.encrypt_string(password)
-            self.update_connection(instance_label, hostname=server, username=username, password=password, verify_ssl=verify_ssl)
-        else:
-            api_key = self.encryption.encrypt_string(api_key)
-            self.update_connection(instance_label, hostname=server, api_key=api_key, verify_ssl=verify_ssl)
-        self.reload()
+        # Drop any empty keys from kwargs before submitting
+        connection_kwargs = {k: v for k, v in connection_kwargs.items() if v is not None}
+        self.update_connection(**connection_kwargs)
 
     def list_configured_instances(self):
         return sorted(self.__full_config.dict().keys())
@@ -248,7 +292,6 @@ class LogicHubConnection:
     @instance.setter
     def instance(self, name: str):
         name = name.strip()
-        self.config.reload()
         _new_credentials = self.config.get_instance(name)
         if not _new_credentials:
             print(f"No instance found by name \"{name}.\" Creating new connection...")

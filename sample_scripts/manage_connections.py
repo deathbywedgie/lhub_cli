@@ -16,37 +16,29 @@ VERIFY_SSL = None
 def get_args():
     parser = argparse.ArgumentParser(description="Manage LogicHub CLI connections")
 
-    parser.add_argument("instance_label", type=str, nargs="?", help="Label (name) for the connection")
     parser.add_argument("-cred", "--credentials_file_name", default=None, help="Alternate credentials file name to use (default: \"credentials\")")
 
     parser.add_argument("--show_secure", action="store_true", help="Optional: include passwords and API tokens in output", default=None)
 
-    parser.add_argument("-s", "--server", nargs='?', type=str, help="Optional: server hostname", default=None)
-    parser.add_argument("-t", "--auth_type", nargs='?', type=str, choices=["api_key", "password"], help="Optional: connection authentication type")
-    parser.add_argument("-a", "--api_key", nargs='?', type=str, help="Optional: connection API token", default=None)
-    parser.add_argument("-u", "--username", nargs='?', type=str, help="Optional: connection username", default=None)
-    parser.add_argument("-p", "--password", nargs='?', type=str, help="Optional: connection password", default=None)
-
     mgmt = parser.add_mutually_exclusive_group()
     mgmt.add_argument('--show_all', action="store_true", help="Show all connections")
-    mgmt.add_argument('-c', '--create', action="store_true", help="Create a new connection")
-    mgmt.add_argument('-d', '--delete', action="store_true", help="Delete an existing connection")
+    mgmt.add_argument("instance_label", type=str, nargs="?", help="Label (name) for the connection")
+    mgmt.add_argument('-c', '--create', metavar="instance_label", help="Create a new connection")
+    mgmt.add_argument('-d', '--delete', metavar="instance_label", help="Delete an existing connection")
 
-    # Options that are mutually exclusive... i.e. can't be both verbose and quiet at the same time
-    verify_ssl = parser.add_mutually_exclusive_group()
-    verify_ssl.add_argument("-y", "--yes", action="store_true", help="Enable SSL verification")
-    verify_ssl.add_argument("-n", "--no", action="store_true", help="Disable SSL verification")
+    connection = parser.add_argument_group("New Connection Properties")
+    connection.add_argument("-s", "--server", nargs='?', type=str, help="Optional: server hostname", default=None)
+    connection.add_argument("-t", "--auth_type", nargs='?', type=str, choices=["api_key", "password"], help="Optional: connection authentication type")
+    connection.add_argument("-a", "--api_key", nargs='?', type=str, help="Optional: connection API token", default=None)
+    connection.add_argument("-u", "--username", nargs='?', type=str, help="Optional: connection username", default=None)
+    connection.add_argument("-p", "--password", nargs='?', type=str, help="Optional: connection password", default=None)
+    connection.add_argument("-n", "--no", action="store_true", help="Disable SSL verification")
 
     # if parser.show_all:
     #     parser.instance_label = "x"
     _args = parser.parse_args()
 
-    if not _args.show_all and not _args.instance_label:
-        print("instance_label is required except with '--show_all'", file=sys.stderr)
-        exit(1)
     global VERIFY_SSL
-    if _args.yes:
-        VERIFY_SSL = True
     if _args.no:
         VERIFY_SSL = False
     return parser.parse_args()
@@ -73,18 +65,19 @@ def main():
 
     try:
         if args.delete:
-            config.delete_connection(args.instance_label)
+            print(f"Deleting instance: {args.delete}")
+            config.delete_connection(args.delete)
 
         elif args.create:
-            print(f"Creating instance: {args.instance_label}")
+            print(f"Creating instance: {args.create}")
             config.create_instance(
-                instance_label=args.instance_label,
+                instance_label=args.create,
                 server=args.server,
                 auth_type=args.auth_type,
                 api_key=args.api_key,
                 username=args.username,
                 password=args.password,
-                verify_ssl=VERIFY_SSL
+                verify_ssl=args.no is False
             )
 
         elif args.show_all:

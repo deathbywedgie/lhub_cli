@@ -13,10 +13,15 @@ DEFAULT_OUTPUT = "table"
 
 # available args and expected input
 def get_args():
+    starting_config = lhub_cli.LogicHubConnection()
+    existing_creds_str = ''
+    if starting_config.config.existing_credential_files:
+        existing_creds_str = f', existing: {starting_config.config.existing_credential_files}'
     parser = argparse.ArgumentParser(description="List all users from one or more LogicHub instances")
 
     # Required inputs
     parser.add_argument("instance_names", nargs="*", help="Names of specific instances from stored config (default: show all)")
+    parser.add_argument("-cred", "--credentials_file_name", default=None, help=f"Alternate credentials file name to use (default: \"credentials\"{existing_creds_str})")
 
     # Optional inputs
     parser.add_argument("-i", "--inactive", action="store_true", help="Include inactive users in the results")
@@ -38,7 +43,7 @@ def main():
     if args.instance_names:
         instances = args.instance_names
     else:
-        config = lhub_cli.connection_manager.LogicHubConnection()
+        config = lhub_cli.connection_manager.LogicHubConnection(credentials_file_name=args.credentials_file_name)
         instances = sorted(config.all_instances)
 
     # For all available attributes, set: attributes = "*"
@@ -55,9 +60,10 @@ def main():
     for n in progressbar.progressbar(range(len(instances))):
         cli = lhub_cli.LogicHubCLI(
             instance_name=instances[n],
-            log_level=args.log_level
+            log_level=args.log_level,
+            credentials_file_name=args.credentials_file_name
         )
-        cli.session.api.log.debug(f"Connected to {cli.instance_name}")
+        cli.log.debug(f"Connected to {cli.instance_name}")
         combined_results.extend(
             cli.actions.list_users(
                 print_output=False,
