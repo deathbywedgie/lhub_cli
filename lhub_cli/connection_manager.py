@@ -108,7 +108,7 @@ class LhubConfig:
             self.credentials_file_name = f"{CREDENTIALS_FILE_NAME}-{credentials_file_name}"
         self.credentials_path = os.path.join(LHUB_CONFIG_PATH, self.credentials_file_name)
         self.__load_credentials_file()
-        self.encryption = Encryption(LHUB_CONFIG_PATH)
+        self.encryption = Encryption(LHUB_CONFIG_PATH, logger=self.__log, log_level=log_level)
 
     @property
     def existing_credential_files(self):
