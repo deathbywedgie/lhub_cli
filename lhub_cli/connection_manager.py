@@ -100,7 +100,7 @@ class LhubConfig:
         if log_level:
             self.__log.setLevel(log_level)
         if not os.path.exists(LHUB_CONFIG_PATH):
-            self.log.info(f"Default config path not found. Creating: {LHUB_CONFIG_PATH}")
+            self.__log.info(f"Default config path not found. Creating: {LHUB_CONFIG_PATH}")
             __lhub_path = Path(LHUB_CONFIG_PATH)
             __lhub_path.mkdir(parents=True, exist_ok=True)
 
