@@ -1,5 +1,5 @@
 from lhub import LogicHub
-from ..log import DefaultLogger
+from ..log import DefaultLogger, LOGGER_TYPES
 from lhub.common.dicts_and_lists import to_dict_recursive
 import json
 from tabulate import tabulate, tabulate_formats
@@ -18,7 +18,7 @@ class Command:
     verify_ssl = True
     lhub_hidden_fields = ["lhub_page_num", "lhub_id"]
 
-    def __init__(self, session: LogicHub, verify_ssl=True, output_type: str = None, table_format: str = None, logger=None, log_level=None):
+    def __init__(self, session: LogicHub, verify_ssl=True, output_type: str = None, table_format: str = None, logger: LOGGER_TYPES = None, log_level=None):
         self.__log = logger or DefaultLogger()
         if log_level:
             self.__log.setLevel(log_level)

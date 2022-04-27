@@ -1,7 +1,9 @@
 import sys
+from logging import RootLogger
 
 _LOG_LEVEL_MAP = {"debug": 7, "info": 6, "notice": 5, "warn": 4, "error": 3, "crit": 2, "alert": 1, "fatal": 0}
 LOG_LEVELS = _LOG_LEVEL_MAP.keys()
+LOGGER_TYPES = (RootLogger)
 
 
 def generate_log_session_id(obj):

@@ -1,12 +1,12 @@
 import lhub
 from .connection_manager import LogicHubConnection
 from .actions import Actions
-from .log import DefaultLogger
+from .log import DefaultLogger, LOGGER_TYPES
 
 
 class LogicHubCLI:
 
-    def __init__(self, instance_name, logger=None, log_level=None, **kwargs):
+    def __init__(self, instance_name, logger: LOGGER_TYPES = None, log_level=None, **kwargs):
         # ToDo:
         #  * Move the logging function out of lhub and into lhub_cli
         #  * Standardize better w/ the "logging" package

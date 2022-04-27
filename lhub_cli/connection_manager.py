@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from dataclasses_json import dataclass_json
 from lhub import LogicHub
 from .encryption import Encryption
-from .log import DefaultLogger
+from .log import DefaultLogger, LOGGER_TYPES
 import getpass
 from .common.config import dict_to_ini_file
 from .common.shell import query_yes_no
@@ -95,7 +95,7 @@ class LhubConfig:
     credentials_file_name = CREDENTIALS_FILE_NAME
     __credentials_file_modified_time = None
 
-    def __init__(self, credentials_file_name=None, logger=None, log_level=None):
+    def __init__(self, credentials_file_name=None, logger: LOGGER_TYPES = None, log_level=None):
         self.__log = logger or DefaultLogger()
         if log_level:
             self.__log.setLevel(log_level)
@@ -279,7 +279,7 @@ class LogicHubConnection:
     # ToDo Hide this (dunder) when finished developing
     config: LhubConfig = None
 
-    def __init__(self, instance_alias=None, logger=None, log_level=None, **kwargs):
+    def __init__(self, instance_alias=None, logger: LOGGER_TYPES = None, log_level=None, **kwargs):
         self.__log = logger or DefaultLogger()
         if log_level:
             self.__log.setLevel(log_level)
