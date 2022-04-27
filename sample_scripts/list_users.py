@@ -93,7 +93,7 @@ def main():
         # Enable to provide a list of columns for custom sorting
         # sort_order=[],
 
-        # Change to False to always print output even if writing to a file
+        # Change to "False" to always print output even if writing to a file
         file_only=(True if args.file else False)
     )
 
