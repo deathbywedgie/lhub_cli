@@ -100,7 +100,7 @@ class LhubConfig:
         if log_level:
             self.__log.setLevel(log_level)
         if not os.path.exists(LHUB_CONFIG_PATH):
-            print(f"Default config path not found. Creating: {LHUB_CONFIG_PATH}")
+            self.log.info(f"Default config path not found. Creating: {LHUB_CONFIG_PATH}")
             __lhub_path = Path(LHUB_CONFIG_PATH)
             __lhub_path.mkdir(parents=True, exist_ok=True)
 
@@ -141,6 +141,7 @@ class LhubConfig:
         if self.__full_config and self.__credentials_file_modified_time == file_modified:
             return
         self.__credentials_file_modified_time = file_modified
+        self.__log.debug(f"Loading credential file: {self.credentials_file_name} [{self.credentials_path}]")
         self.__full_config = ConfigObj(self.credentials_path)
 
     @property
@@ -304,7 +305,7 @@ class LogicHubConnection:
         name = name.strip()
         _new_credentials = self.config.get_instance(name)
         if not _new_credentials:
-            print(f"No instance found by name \"{name}.\" Creating new connection...")
+            self.__log.warning(f"No instance found by name \"{name}.\" Creating new connection...")
             self.config.create_instance(name)
             _new_credentials = self.config.get_instance(name)
 
