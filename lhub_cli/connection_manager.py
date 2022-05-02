@@ -276,7 +276,6 @@ class LogicHubConnection:
     # preferences: Preferences = None
     credentials = None
 
-    # ToDo Hide this (dunder) when finished developing
     config: LhubConfig = None
 
     def __init__(self, instance_alias=None, logger: ExpectedLoggerTypes = None, log_level=None, **kwargs):
