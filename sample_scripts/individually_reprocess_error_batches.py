@@ -146,7 +146,7 @@ class LogicHubStream:
 
         batch_id = int(re.sub(r'\D+', '', batch_dict['id']))
         _initial_state = batch_dict['state']
-        self.log.debug(f"Batch reprocess requested for ID {self.log}, state={_initial_state}")
+        self.log.debug(f"Batch reprocess requested for ID {batch_id}, state={_initial_state}")
         print("ID: {batch_id} [{batch_start} - {batch_end}]".format(
             batch_id=batch_id,
             batch_start=epoch_time_to_str(batch_dict['from'] / 1000),
