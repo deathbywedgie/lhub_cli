@@ -206,7 +206,7 @@ class LhubConfig:
             # If a password was provided but no API key, assume password auth
             auth_type = 'password'
         if api_key and not password:
-            # If a API key was provided but no password, assume password auth
+            # If an API key was provided but no password, assume password auth
             auth_type = 'api_key'
 
         while not server:
