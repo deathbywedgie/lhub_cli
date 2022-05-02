@@ -156,7 +156,7 @@ class Actions:
         results = self.lhub.actions.list_users(hide_inactive=hide_inactive, simple_format=True)
         for r in results:
             if 'auth_type' in r:
-                r['password_enabled'] = r['auth_type'] == "password" or isinstance(r['auth_type'], dict) and r['auth_type']['enablePasswordAuthentication'] == True
+                r['password_enabled'] = r['auth_type'] == "password" or isinstance(r['auth_type'], dict) and r['auth_type']['enablePasswordAuthentication'] is True
                 r['sso_enabled'] = 'samlConfigId' in r['auth_type']
             for k, v in r.items():
                 if not isinstance(v, (str, Number)) or isinstance(v, bool):
