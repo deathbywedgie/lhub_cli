@@ -12,7 +12,6 @@ from sys import stderr
 
 import lhub
 from lhub.common.time import epoch_time_to_str
-from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
 import lhub_cli.log
 from lhub_cli.connection_manager import LogicHubConnection
