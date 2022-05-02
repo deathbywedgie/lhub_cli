@@ -1,10 +1,10 @@
 from lhub import LogicHub
-from ..log import DefaultLogger, LOGGER_TYPES
 from lhub.common.dicts_and_lists import to_dict_recursive
 import json
 from tabulate import tabulate, tabulate_formats
 import csv
 import os
+from ..log import generate_logger, ExpectedLoggerTypes
 
 # Quick reference for external scripts
 TABLE_FORMATS = tabulate_formats
@@ -18,8 +18,13 @@ class Command:
     verify_ssl = True
     lhub_hidden_fields = ["lhub_page_num", "lhub_id"]
 
-    def __init__(self, session: LogicHub, verify_ssl=True, output_type: str = None, table_format: str = None, logger: LOGGER_TYPES = None, log_level=None):
-        self.__log = logger or DefaultLogger()
+    def __init__(self, session: LogicHub, verify_ssl=True, output_type: str = None, table_format: str = None, logger: ExpectedLoggerTypes = None, log_level=None):
+        self.session = session
+        self.__log = logger or generate_logger(
+            self_obj=self,
+            # instance_name=None,
+            log_level=log_level
+        )
         if log_level:
             self.__log.setLevel(log_level)
         if output_type:
@@ -31,7 +36,6 @@ class Command:
         if table_format and table_format not in TABLE_FORMATS:
             raise ValueError(f"Invalid table format: {table_format}")
         self.table_format = table_format
-        self.session = session
 
     @property
     def output_type(self):

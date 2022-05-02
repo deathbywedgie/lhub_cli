@@ -1,8 +1,9 @@
 import argparse
 from lhub_cli.common.output import SUPPORTED_OUTPUT_TYPES, SUPPORTED_TABLE_FORMATS
+from ..log import Logging
 
 
-def add_script_output_args(parser: argparse.ArgumentParser, include_debug=True, default_output=None):
+def add_script_output_args(parser: argparse.ArgumentParser, include_log_level=True, default_output=None):
     if not default_output:
         default_output = "table"
     elif default_output not in SUPPORTED_OUTPUT_TYPES:
@@ -33,5 +34,20 @@ def add_script_output_args(parser: argparse.ArgumentParser, include_debug=True, 
         help=f"Table format (ignored if output type is not table). Available formats are: {', '.join(SUPPORTED_TABLE_FORMATS)}"
     )
 
-    if include_debug:
-        output.add_argument("--debug", action="store_true", help="Enable debug logging")
+    if include_log_level:
+        output.add_argument(
+            "-l", "--level", default="INFO",
+            choices=['CRITICAL', 'FATAL', 'ERROR', 'WARN', 'WARNING', 'INFO', 'DEBUG', 'NOTSET', 'critical', 'fatal', 'error', 'warn', 'warning', 'info', 'debug'],
+            help="Logging level"
+        )
+
+
+def finish_parser_args(parser: argparse.ArgumentParser, **kwargs):
+    # _ = kwargs.pop("include_log_level", None)
+    add_script_output_args(parser=parser, **kwargs)
+    final_args = parser.parse_args()
+    if hasattr(final_args, "level"):
+        Logging.level = final_args.level.upper().strip()
+    final_args.LOGGER = Logging()
+    final_args.LOGGER = final_args.LOGGER.log
+    return final_args

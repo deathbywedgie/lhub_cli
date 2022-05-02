@@ -1,7 +1,7 @@
 import cmd
 from lhub import LogicHub
 from .connection_manager import LogicHubConnection
-from .log import DefaultLogger, LOGGER_TYPES
+from .log import generate_logger, ExpectedLoggerTypes
 from colorama import init as init_colorama
 from colorama import Fore, Back, Style
 
@@ -17,9 +17,9 @@ class Shell(cmd.Cmd):
     connection: LogicHubConnection = None
     session: LogicHub = None
 
-    def __init__(self, logger: LOGGER_TYPES = None, log_level=None):
+    def __init__(self, logger: ExpectedLoggerTypes = None, log_level=None):
         super().__init__()
-        self.log = logger or DefaultLogger()
+        self.log = logger or generate_logger(self_obj=self, log_level=log_level or "INFO")
         if log_level:
             self.log.setLevel(log_level)
         if not self.connection:

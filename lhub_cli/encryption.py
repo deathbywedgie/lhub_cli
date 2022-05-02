@@ -3,7 +3,7 @@ import rsa
 import base64
 from .exceptions.encryption import EncryptionKeyError
 from .exceptions.base import PathNotFound
-from .log import LOGGER_TYPES, DefaultLogger
+from .log import generate_logger, ExpectedLoggerTypes
 
 # https://stuvel.eu/python-rsa-doc/usage.html#generating-keys
 
@@ -12,8 +12,8 @@ class Encryption:
     public_default = ".lhub.pub"
     private_default = ".lhub.pem"
 
-    def __init__(self, key_location, private_key_name=None, pub_file_name=None, logger: LOGGER_TYPES = None, log_level=None):
-        self.__log = logger if logger else DefaultLogger()
+    def __init__(self, key_location, private_key_name=None, pub_file_name=None, logger: ExpectedLoggerTypes = None, log_level=None):
+        self.__log = logger if logger else generate_logger(self_obj=self, log_level=log_level)
         if log_level:
             self.__log.setLevel(log_level)
         if not os.path.exists(key_location):

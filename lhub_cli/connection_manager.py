@@ -5,15 +5,15 @@ from dataclasses import dataclass
 from dataclasses_json import dataclass_json
 from lhub import LogicHub
 from .encryption import Encryption
-from .log import DefaultLogger, LOGGER_TYPES
 import getpass
 from .common.config import dict_to_ini_file
 from .common.shell import query_yes_no
 from requests.exceptions import SSLError
 from .exceptions.base import CLIValueError
 import sys
+from .log import generate_logger, ExpectedLoggerTypes
 
-# Over-writable/configurable static variables
+# static/global variables
 LHUB_CONFIG_PATH = os.path.join(str(Path.home()), ".logichub")
 CREDENTIALS_FILE_NAME = "credentials"
 PREFERENCES_FILE_NAME = "preferences"
@@ -95,8 +95,8 @@ class LhubConfig:
     credentials_file_name = CREDENTIALS_FILE_NAME
     __credentials_file_modified_time = None
 
-    def __init__(self, credentials_file_name=None, logger: LOGGER_TYPES = None, log_level=None):
-        self.__log = logger or DefaultLogger()
+    def __init__(self, credentials_file_name=None, logger: ExpectedLoggerTypes = None, log_level=None):
+        self.__log = logger or generate_logger(self_obj=self, log_level=log_level)
         if log_level:
             self.__log.setLevel(log_level)
         if not os.path.exists(LHUB_CONFIG_PATH):
@@ -279,11 +279,11 @@ class LogicHubConnection:
     # ToDo Hide this (dunder) when finished developing
     config: LhubConfig = None
 
-    def __init__(self, instance_alias=None, logger: LOGGER_TYPES = None, log_level=None, **kwargs):
-        self.__log = logger or DefaultLogger()
+    def __init__(self, instance_alias=None, logger: ExpectedLoggerTypes = None, log_level=None, **kwargs):
+        self.log = logger or generate_logger(self_obj=self, instance_name=instance_alias, log_level=log_level)
         if log_level:
-            self.__log.setLevel(log_level)
-        self.config = LhubConfig(logger=self.__log, **kwargs)
+            self.log.setLevel(log_level)
+        self.config = LhubConfig(logger=self.log, **kwargs)
         # ToDo Not yet used, but the groundwork has been laid. Revisit and enable this when ready to begin putting it to use.
         # if not self.preferences:
         #     self.preferences = Preferences()
@@ -305,7 +305,7 @@ class LogicHubConnection:
         name = name.strip()
         _new_credentials = self.config.get_instance(name)
         if not _new_credentials:
-            self.__log.warning(f"No instance found by name \"{name}.\" Creating new connection...")
+            self.log.warning(f"No instance found by name \"{name}.\" Creating new connection...")
             self.config.create_instance(name)
             _new_credentials = self.config.get_instance(name)
 

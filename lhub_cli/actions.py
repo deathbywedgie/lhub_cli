@@ -9,8 +9,7 @@ import re
 from .connection_manager import LogicHubConnection
 from .common.output import print_fancy_lists
 from numbers import Number
-from .log import DefaultLogger, LOGGER_TYPES
-
+from .log import generate_logger, ExpectedLoggerTypes
 
 # ToDo NEXT: Follow the same formula from "export_playbooks" to add support for exporting other resource types as well
 #  * custom lists
@@ -29,11 +28,11 @@ from .log import DefaultLogger, LOGGER_TYPES
 # ToDo This isn't going to scale indefinitely. Need to break these actions apart by feature somehow.
 class Actions:
 
-    def __init__(self, session: lhub.LogicHub, config: LogicHubConnection, instance_label, logger: LOGGER_TYPES = None):
+    def __init__(self, session: lhub.LogicHub, config: LogicHubConnection, instance_label, logger: ExpectedLoggerTypes = None):
         self.lhub = session
         self.__config = config
-        self.__log = logger or DefaultLogger()
         self.__instance_name = instance_label
+        self.__log = logger or generate_logger(self_obj=self, instance_name=instance_label)
 
     def __set_export_path(self, parent_folder, export_type):
         current_date = time.strftime("%Y-%m-%d")
