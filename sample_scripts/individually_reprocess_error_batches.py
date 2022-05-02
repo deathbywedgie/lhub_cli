@@ -221,5 +221,5 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\nControl-C Pressed; stopping...")
+        print("\nControl-C Pressed; stopping...", file=stderr)
         exit(1)
