@@ -12,6 +12,9 @@ from sys import stderr
 
 import lhub
 from lhub.common.time import epoch_time_to_str
+from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
+
+import lhub_cli.log
 from lhub_cli.connection_manager import LogicHubConnection
 
 # ToDo Currently this script pulls a list of ALL batches and their states in
@@ -89,8 +92,8 @@ class LogicHubStream:
     def __init__(self, stream_id, **kwargs):
         self.stream_id = re.sub(r'\D+', '', stream_id) if isinstance(stream_id, str) else stream_id
         log_level = "DEBUG" if DEBUG_ENABLED else None
-        self.session = lhub.LogicHub(**kwargs, log_level=log_level)
-        self.log = self.session.api.log
+        self.log = lhub_cli.log.generate_logger(self_obj=self)
+        self.session = lhub.LogicHub(**kwargs, logger=self.log, log_level=log_level)
         print(f"Checking status of stream \"{self.stream_name}\"")
         self.update_batches()
 
