@@ -19,7 +19,7 @@ class Shell(cmd.Cmd):
 
     def __init__(self, logger: ExpectedLoggerTypes = None, log_level=None):
         super().__init__()
-        self.log = logger or generate_logger(self_obj=self, log_level=log_level or "INFO")
+        self.log = logger or generate_logger(self_obj=self, level=log_level or "INFO")
         if log_level:
             self.log.setLevel(log_level)
         if not self.connection:

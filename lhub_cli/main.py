@@ -12,7 +12,7 @@ class LogicHubCLI:
         #  * Standardize better w/ the "logging" package
         self.instance_name = instance_name
         credentials_file_name = kwargs.pop("credentials_file_name", None)
-        self.log = logger or generate_logger(self_obj=self, instance_name=self.instance_name, log_level=log_level)
+        self.log = logger or generate_logger(self_obj=self, instance_name=self.instance_name, level=log_level)
         if log_level and hasattr(self.log, "setLevel"):
             self.log.setLevel(log_level)
         self.log.debug(f"Initializing config")

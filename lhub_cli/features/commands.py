@@ -23,7 +23,7 @@ class Command:
         self.__log = logger or generate_logger(
             self_obj=self,
             # instance_name=None,
-            log_level=log_level
+            level=log_level
         )
         if log_level:
             self.__log.setLevel(log_level)
