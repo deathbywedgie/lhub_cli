@@ -21,8 +21,7 @@ class Command:
     def __init__(self, session: LogicHub, verify_ssl=True, output_type: str = None, table_format: str = None, logger: ExpectedLoggerTypes = None, log_level=None):
         self.session = session
         self.__log = logger or generate_logger(
-            self_obj=self,
-            # instance_name=None,
+            name=__name__,
             level=log_level
         )
         if log_level:
