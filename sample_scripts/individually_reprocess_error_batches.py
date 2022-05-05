@@ -14,6 +14,7 @@ import lhub
 from lhub.common.time import epoch_time_to_str
 
 from lhub_cli.log import generate_logger
+from lhub_cli.common.args import add_script_logging_args
 from lhub_cli.connection_manager import LogicHubConnection
 
 # ToDo Currently this script pulls a list of ALL batches and their states in
@@ -44,8 +45,7 @@ STATES = {
 
 
 def get_args():
-    global LOG_LEVEL
-    global log
+    global LOG_LEVEL, log
     # Range of available args and expected input
     parser = argparse.ArgumentParser(description="Process error batches one at a time")
 
@@ -55,12 +55,8 @@ def get_args():
 
     # Optional args:
     parser.add_argument("-l", "--limit", metavar="INT", type=int, default=None, help=f"Set the maximum number of batches to reprocess (default: None)")
-    logging = parser.add_mutually_exclusive_group()
-    logging.add_argument("--level", type=str, default=LOG_LEVEL, help="Specify log level")
-    logging.add_argument("--debug", action="store_true", help="Enable debug logging (shortcut)")
-    logging.add_argument("-vv", "--verbose", action="store_true", help="Enable very verbose logging")
+    add_script_logging_args(parser)
 
-    # take in the arguments provided by user
     return parser.parse_args()
 
 

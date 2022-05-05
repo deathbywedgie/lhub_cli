@@ -13,10 +13,10 @@ DEFAULT_OUTPUT = "table"
 
 # available args and expected input
 def get_args():
-    starting_config = lhub_cli.LogicHubConnection()
+    cred_files = lhub_cli.list_credential_files()
     existing_creds_str = ''
-    if starting_config.config.existing_credential_files:
-        existing_creds_str = f', existing: {starting_config.config.existing_credential_files}'
+    if cred_files:
+        existing_creds_str = f', existing: {cred_files}'
     parser = argparse.ArgumentParser(description="List all users from one or more LogicHub instances")
 
     # Required inputs
@@ -30,20 +30,25 @@ def get_args():
     #         "-f", "--file" (Also write output to a file)
     #         "-o", "--output" (Output style, e.g. table, csv, json, json-pretty)
     #         "-t", "--table_format" (for output style of table, set a specific table style, such as plain, grid, and jira)
-    lhub_cli.common.args.add_script_output_args(parser, default_output=DEFAULT_OUTPUT)
-
-    _args = parser.parse_args()
-    _args.log_level = "DEBUG" if _args.debug else DEFAULT_LOG_LEVEL
-    return _args
+    # Also sets logging automatically
+    return lhub_cli.common.args.finish_parser_args(
+        parser,
+        default_output=DEFAULT_OUTPUT,
+        # Set include_log_level to False to drop log arg
+        # include_log_level=False
+    )
 
 
 def main():
     args = get_args()
+    log = args.LOGGER
 
     if args.instance_names:
         instances = args.instance_names
     else:
-        config = lhub_cli.connection_manager.LogicHubConnection(credentials_file_name=args.credentials_file_name)
+        config = lhub_cli.connection_manager.LogicHubConnection(
+            credentials_file_name=args.credentials_file_name
+        )
         instances = sorted(config.all_instances)
 
     # For all available attributes, set: attributes = "*"
@@ -59,25 +64,33 @@ def main():
     combined_results = []
     if instances:
         instance_sessions = {}
-        print(f"Verifying connections")
-        for n in progressbar.progressbar(range(len(instances))):
+        instance_count = len(instances)
+        cycle = range(instance_count)
+
+        if args.level != "DEBUG":
+            cycle = progressbar.progressbar(cycle)
+            print(f"Verifying connections")
+        for n in cycle:
+            log.debug(f"Verifying connection {n + 1}/{instance_count}")
             instance_sessions[instances[n]] = lhub_cli.LogicHubCLI(
                 instance_name=instances[n],
-                log_level=args.log_level,
                 credentials_file_name=args.credentials_file_name
             )
 
-        print(f"Fetching users")
-        for n in progressbar.progressbar(range(len(instances))):
+        cycle = range(instance_count)
+        if args.level != "DEBUG":
+            cycle = progressbar.progressbar(cycle)
+            print(f"Fetching users")
+        for n in cycle:
             _instance = instances[n]
             cli = instance_sessions[instances[n]]
-            cli.log.debug(f"Connected to {cli.instance_name}")
+            log.debug(f"Fetching users from {cli.instance_name} ({n + 1}/{len(instances)})")
             combined_results.extend(
                 cli.actions.list_users(
                     print_output=False,
                     show_hostname=True,
                     attributes=attributes,
-                    hide_inactive=show_inactive is False,
+                    hide_inactive=show_inactive is False
                 )
             )
 

@@ -1,5 +1,7 @@
 import argparse
 from lhub_cli.common.output import SUPPORTED_OUTPUT_TYPES, SUPPORTED_TABLE_FORMATS
+from ..main import LogicHubCLI
+from ..connection_manager import LogicHubConnection
 from ..log import Logging
 from typing import Union
 
@@ -64,6 +66,6 @@ def finish_parser_args(parser: argparse.ArgumentParser, **kwargs):
         if final_args.debug or final_args.verbose:
             log_level = "DEBUG"
         Logging.level = log_level
-    final_args.LOGGER = Logging()
-    final_args.LOGGER = final_args.LOGGER.log
+    new_logger = Logging()
+    final_args.LOGGER = new_logger.log
     return final_args
