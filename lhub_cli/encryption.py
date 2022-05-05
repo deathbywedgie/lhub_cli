@@ -2,7 +2,7 @@ import os
 import rsa
 import base64
 from .exceptions.encryption import EncryptionKeyError
-from .exceptions.base import PathNotFound
+from .exceptions.app import PathNotFound
 from .log import generate_logger, ExpectedLoggerTypes
 
 # https://stuvel.eu/python-rsa-doc/usage.html#generating-keys
