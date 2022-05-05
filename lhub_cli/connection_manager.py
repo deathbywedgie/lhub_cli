@@ -6,17 +6,13 @@ from dataclasses_json import dataclass_json
 from lhub import LogicHub
 from .encryption import Encryption
 import getpass
-from .common.config import dict_to_ini_file
+from .common.config import dict_to_ini_file, list_credential_files
+from .statics import CREDENTIALS_FILE_NAME, LHUB_CONFIG_PATH, PREFERENCES_FILE_NAME
 from .common.shell import query_yes_no
 from requests.exceptions import SSLError
 from .exceptions.base import CLIValueError
 import sys
 from .log import generate_logger, ExpectedLoggerTypes
-
-# static/global variables
-LHUB_CONFIG_PATH = os.path.join(str(Path.home()), ".logichub")
-CREDENTIALS_FILE_NAME = "credentials"
-PREFERENCES_FILE_NAME = "preferences"
 
 
 @dataclass_json
@@ -109,16 +105,6 @@ class LhubConfig:
         self.credentials_path = os.path.join(LHUB_CONFIG_PATH, self.credentials_file_name)
         self.__load_credentials_file()
         self.encryption = Encryption(LHUB_CONFIG_PATH, logger=self.__log, log_level=log_level)
-
-    @property
-    def existing_credential_files(self):
-        return [CREDENTIALS_FILE_NAME] + sorted(list(set(
-            [
-                f.removeprefix(f'{CREDENTIALS_FILE_NAME}-')
-                for f in os.listdir(LHUB_CONFIG_PATH)
-                if f.startswith(f'{CREDENTIALS_FILE_NAME}-')
-            ]
-        )))
 
     def write_credential_file(self, explicit_config: dict = None):
         if explicit_config is None:

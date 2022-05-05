@@ -35,19 +35,28 @@ def add_script_output_args(parser: argparse.ArgumentParser, include_log_level=Tr
     )
 
     if include_log_level:
-        output.add_argument(
-            "-l", "--level", default="INFO",
+        logging = output.add_mutually_exclusive_group()
+        logging.add_argument(
+            "-log", "--level", default="INFO",
             choices=['CRITICAL', 'FATAL', 'ERROR', 'WARN', 'WARNING', 'INFO', 'DEBUG', 'NOTSET', 'critical', 'fatal', 'error', 'warn', 'warning', 'info', 'debug'],
-            help="Logging level"
+            help="Set logging level"
         )
+        logging.add_argument("--debug", action="store_true", help="Enable debug logging (shortcut)")
+        logging.add_argument("-vv", "--verbose", action="store_true", help="Enable very verbose logging")
 
 
 def finish_parser_args(parser: argparse.ArgumentParser, **kwargs):
     # _ = kwargs.pop("include_log_level", None)
     add_script_output_args(parser=parser, **kwargs)
     final_args = parser.parse_args()
-    if hasattr(final_args, "level"):
-        Logging.level = final_args.level.upper().strip()
+    if kwargs.get("include_log_level", True) is not False:
+        if not final_args.verbose:
+            # Doing this first before setting any other log level prevents enabling debug logs for urllib3 and any other modules which use logging
+            _ = Logging()
+        log_level = final_args.level.upper().strip()
+        if final_args.debug or final_args.verbose:
+            log_level = "DEBUG"
+        Logging.level = log_level
     final_args.LOGGER = Logging()
     final_args.LOGGER = final_args.LOGGER.log
     return final_args
