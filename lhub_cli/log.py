@@ -1,63 +1,54 @@
-import sys
+import logging
+import structlog
+from sys import stdout
 
-_LOG_LEVEL_MAP = {"debug": 7, "info": 6, "notice": 5, "warn": 4, "error": 3, "crit": 2, "alert": 1, "fatal": 0}
-LOG_LEVELS = _LOG_LEVEL_MAP.keys()
+
+# Alias so that lhub_cli scripts can point to this without risk of having to change it later if I move away from structlog
+# Mainly just used for type parsing/tab completions within PyCharm and other dev tools
+ExpectedLoggerTypes = [structlog.types.BindableLogger]
 
 
-# ToDo Placeholder for real logging: figure out how to do the same w/ the logger package and get rid of this
-class DefaultLogger:
-    __log_level = "INFO"
-    default_log_level = "INFO"
+class Logging:
+    level = "INFO"
 
-    def __init__(self, session_prefix=None, log_level=None):
-        self.log_level = log_level if log_level else self.default_log_level
-        # self.session_prefix = session_prefix or ""
-        self.session_prefix = (session_prefix or self.generate_logger_prefix()).strip()
+    def __init__(self, name=None, log_level=None, **kwargs):
+        log_level = log_level or Logging.level
+        self.log = generate_logger(name=name or __name__, level=log_level, **kwargs)
 
-    def generate_logger_prefix(self):
-        return f"[{hex(id(self))}] "
 
-    @property
-    def log_level(self):
-        if self.__log_level.lower() not in LOG_LEVELS:
-            raise ValueError(f"Invalid log level: {self.__log_level}")
-        return self.__log_level
+def generate_logger(name, instance_name=None, level=None, include_file_info=False, **kwargs):
+    """
+    Generate a logger object for use throughout lhub and lhub_cli
 
-    @log_level.setter
-    def log_level(self, val: str):
-        if val.lower() not in LOG_LEVELS:
-            raise ValueError(f"Invalid log level: {val}")
-        self.__log_level = val.upper()
+    :returns: Logger object for lhub and lhub_cli logging
+    :rtype: ExpectedLoggerTypes
+    """
+    level = level.upper().strip() if level else Logging.level
 
-    def __print(self, level, msg):
-        level_num = _LOG_LEVEL_MAP[level.lower()]
-        output_file = sys.stdout if level_num >= 5 else sys.stderr
-        current_level_num = _LOG_LEVEL_MAP[self.log_level.lower()]
-        if current_level_num >= level_num:
-            print(f"[{level.upper()}] {self.session_prefix} {msg}", file=output_file)
-        if level_num == 0:
-            sys.exit(1)
+    # See logging.Formatter doc string for details on all available variables
+    logging_format = "%(message)s"
+    if include_file_info or level == "DEBUG":
+        logging_format = "[%(levelname)s][%(name)s][%(module)s] " + logging_format
 
-    def debug(self, msg):
-        self.__print("debug", msg)
+    logging.basicConfig(
+        format=logging_format,
+        stream=stdout,
+        level=level
+    )
+    if level == logging.DEBUG:
+        # Defining root_log (i.e. no logger name provided in getLogger) deliberately affects the "requests" module (via urllib3) and any other module using builtin logging
+        root_log = logging.getLogger()
+        root_log.setLevel(level)
 
-    def info(self, msg):
-        self.__print("info", msg)
+    # lhub_cli itself will use its own logger
+    logger = logging.getLogger(name)
+    if level:
+        logger.setLevel(level)
 
-    def notice(self, msg):
-        self.__print("notice", msg)
-
-    def warning(self, msg):
-        self.__print("warn", msg)
-
-    def error(self, msg):
-        self.__print("error", msg)
-
-    def critical(self, msg):
-        self.__print("crit", msg)
-
-    def alert(self, msg):
-        self.__print("alert", msg)
-
-    def fatal(self, msg):
-        self.__print("fatal", msg)
+    # if "instance_name" was passed and a connection key was not already passed, add it automatically
+    if instance_name and kwargs.get("connection"):
+        kwargs["connection"] = instance_name
+    structlog.configure()
+    final_log = structlog.wrap_logger(logger, **kwargs)
+    final_log.level = level
+    return final_log

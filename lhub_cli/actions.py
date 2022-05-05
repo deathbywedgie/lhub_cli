@@ -9,7 +9,7 @@ import re
 from .connection_manager import LogicHubConnection
 from .common.output import print_fancy_lists
 from numbers import Number
-
+from .log import generate_logger, ExpectedLoggerTypes
 
 # ToDo NEXT: Follow the same formula from "export_playbooks" to add support for exporting other resource types as well
 #  * custom lists
@@ -28,11 +28,11 @@ from numbers import Number
 # ToDo This isn't going to scale indefinitely. Need to break these actions apart by feature somehow.
 class Actions:
 
-    def __init__(self, session: lhub.LogicHub, config: LogicHubConnection, instance_label):
+    def __init__(self, session: lhub.LogicHub, config: LogicHubConnection, instance_label, logger: ExpectedLoggerTypes = None):
         self.lhub = session
         self.__config = config
-        self.log = self.lhub.api.log
         self.__instance_name = instance_label
+        self.__log = logger or generate_logger(name=__name__, instance_name=instance_label)
 
     def __set_export_path(self, parent_folder, export_type):
         current_date = time.strftime("%Y-%m-%d")
@@ -66,11 +66,11 @@ class Actions:
 
         with open(os.path.join(export_folder, file_name), write_mode) as _file:
             _file.write(file_data)
-        self.log.info(f"{file_info} - Saved successfully")
+        self.__log.info(f"{file_info} - Saved successfully")
 
     def export_playbooks(self, export_folder, limit=None, return_summary=False):
         export_folder = self.__set_export_path(parent_folder=export_folder, export_type="flows")
-        self.log.info(f"Saving files to: {export_folder}")
+        self.__log.info(f"Saving files to: {export_folder}")
         flow_ids = self.lhub.actions.playbook_ids
         flow_ids_list = sorted(list(flow_ids.keys()))
         if limit:
@@ -80,7 +80,7 @@ class Actions:
             _flow_id = flow_ids_list[n]
             _flow_name = flow_ids[_flow_id]
             _file_info = f"{n + 1} of {len(flow_ids_list)}: {_flow_id} ({_flow_name})"
-            self.log.info(f"{_file_info} - Downloading...")
+            self.__log.info(f"{_file_info} - Downloading...")
             try:
                 _response = self.lhub.api.export_playbook(_flow_id)
                 self.__save_export_to_disk(response=_response, export_folder=export_folder, resource_id=_flow_id, resource_name=_flow_name, file_info=_file_info)
@@ -93,7 +93,7 @@ class Actions:
                     error = f"unknown failure (status code {self.lhub.api.last_response_status})"
                     new_warning = f"{warning}: {error}"
                     failed[_flow_id]["errors"].append(error)
-                    self.log.error(new_warning)
+                    self.__log.error(new_warning)
                     with open(os.path.join(export_folder, "_FAILURES.log"), "a+") as _error_file:
                         _error_file.write(new_warning + "\n")
                 else:
@@ -101,11 +101,11 @@ class Actions:
                         error = f"{_error.get('errorType')}: {_error['message']}"
                         new_warning = f"{warning}: {error}"
                         failed[_flow_id]["errors"].append(error)
-                        self.log.error(new_warning)
+                        self.__log.error(new_warning)
                         with open(os.path.join(export_folder, "_FAILURES.log"), "a+") as _error_file:
                             _error_file.write(new_warning + "\n")
 
-        self.log.info("Playbook export complete")
+        self.__log.info("Playbook export complete")
         if return_summary:
             successful = True
             if failed:
@@ -123,7 +123,7 @@ class Actions:
             if sec_between_calls and n > 0:
                 time.sleep(sec_between_calls)
             _ = self.lhub.actions.reprocess_batch(batch_id)
-            self.log.info(f'Batch {batch_id} rerun on {self.__instance_name}')
+            self.__log.info(f'Batch {batch_id} rerun on {self.__instance_name}')
 
     @staticmethod
     def _reformat_user(user: dict):
@@ -156,12 +156,12 @@ class Actions:
         results = self.lhub.actions.list_users(hide_inactive=hide_inactive, simple_format=True)
         for r in results:
             if 'auth_type' in r:
-                r['password_enabled'] = r['auth_type'] == "password" or isinstance(r['auth_type'], dict) and r['auth_type']['enablePasswordAuthentication'] == True
+                r['password_enabled'] = r['auth_type'] == "password" or isinstance(r['auth_type'], dict) and r['auth_type']['enablePasswordAuthentication'] is True
                 r['sso_enabled'] = 'samlConfigId' in r['auth_type']
             for k, v in r.items():
                 if not isinstance(v, (str, Number)) or isinstance(v, bool):
                     r[k] = json.dumps(v)
-        self.log.debug(f"{len([r for r in results if r['is_admin']])} admin users found")
+        self.__log.debug(f"{len([r for r in results if r['is_admin']])} admin users found")
 
         # Update output to insert
         stock_fields = {"connection name": self.__config.credentials.connection_name}

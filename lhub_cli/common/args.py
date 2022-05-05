@@ -1,8 +1,25 @@
 import argparse
 from lhub_cli.common.output import SUPPORTED_OUTPUT_TYPES, SUPPORTED_TABLE_FORMATS
+from ..main import LogicHubCLI
+from ..connection_manager import LogicHubConnection
+from ..log import Logging
+from typing import Union
+
+parser_types = Union[argparse.ArgumentParser, argparse._ArgumentGroup]
 
 
-def add_script_output_args(parser: argparse.ArgumentParser, include_debug=True, default_output=None):
+def add_script_logging_args(parser: parser_types, default_log_level=None):
+    logging = parser.add_mutually_exclusive_group()
+    logging.add_argument(
+        "-log", "--level", default=default_log_level or "INFO",
+        help="Set logging level",
+        choices=['critical', 'fatal', 'error', 'warn', 'warning', 'info', 'debug', 'notset']
+    )
+    logging.add_argument("--debug", action="store_true", help="Enable debug logging (shortcut)")
+    logging.add_argument("-vv", "--verbose", action="store_true", help="Enable very verbose logging")
+
+
+def add_script_output_args(parser: parser_types, include_log_level=True, default_output=None):
     if not default_output:
         default_output = "table"
     elif default_output not in SUPPORTED_OUTPUT_TYPES:
@@ -33,5 +50,22 @@ def add_script_output_args(parser: argparse.ArgumentParser, include_debug=True, 
         help=f"Table format (ignored if output type is not table). Available formats are: {', '.join(SUPPORTED_TABLE_FORMATS)}"
     )
 
-    if include_debug:
-        output.add_argument("--debug", action="store_true", help="Enable debug logging")
+    if include_log_level:
+        add_script_logging_args(output)
+
+
+def finish_parser_args(parser: argparse.ArgumentParser, **kwargs):
+    # _ = kwargs.pop("include_log_level", None)
+    add_script_output_args(parser=parser, **kwargs)
+    final_args = parser.parse_args()
+    if kwargs.get("include_log_level", True) is not False:
+        if not final_args.verbose:
+            # Doing this first before setting any other log level prevents enabling debug logs for urllib3 and any other modules which use logging
+            _ = Logging()
+        log_level = final_args.level.upper()
+        if final_args.debug or final_args.verbose:
+            log_level = "DEBUG"
+        Logging.level = log_level
+    new_logger = Logging()
+    final_args.LOGGER = new_logger.log
+    return final_args

@@ -3,6 +3,7 @@ import rsa
 import base64
 from .exceptions.encryption import EncryptionKeyError
 from .exceptions.base import PathNotFound
+from .log import generate_logger, ExpectedLoggerTypes
 
 # https://stuvel.eu/python-rsa-doc/usage.html#generating-keys
 
@@ -11,7 +12,10 @@ class Encryption:
     public_default = ".lhub.pub"
     private_default = ".lhub.pem"
 
-    def __init__(self, key_location, private_key_name=None, pub_file_name=None):
+    def __init__(self, key_location, private_key_name=None, pub_file_name=None, logger: ExpectedLoggerTypes = None, log_level=None):
+        self.__log = logger if logger else generate_logger(name=__name__, level=log_level)
+        if log_level:
+            self.__log.setLevel(log_level)
         if not os.path.exists(key_location):
             raise PathNotFound(path=key_location, message=f"Key location does not exist: {key_location}")
         self.key_location = key_location
@@ -32,13 +36,13 @@ class Encryption:
     def load_keys(self):
         # If no existing keys are found stored at the expected location, generate new ones
         if not os.path.exists(self.private_key_path) and not os.path.exists(self.public_key_path):
-            print("Existing encryption keys not found. Please wait while new keys are generated.")
+            self.__log.info("Existing encryption keys not found. Please wait while new keys are generated.")
             self._public_key, self.__private_key = rsa.newkeys(4096)
             with open(self.public_key_path, "w+") as _key_file:
                 _key_file.write(self._public_key.save_pkcs1().decode())
             with open(self.private_key_path, "w+") as _key_file:
                 _key_file.write(self.__private_key.save_pkcs1().decode())
-            print("Keys successfully generated.")
+            self.__log.info("Keys successfully generated.")
             return
 
         if not os.path.exists(self.private_key_path):

@@ -2,6 +2,8 @@
 
 import argparse
 import lhub
+from logging import _nameToLevel as AllowedLogLevels
+
 from lhub_cli.shell import Shell
 
 
@@ -18,7 +20,7 @@ def parse_and_validate_args():
         metavar="<level>",
         type=str,
         default="info",
-        choices=lhub.log.LOG_LEVELS,
+        choices=AllowedLogLevels,
         help="Log level (default: info)"
     )
 
@@ -31,11 +33,10 @@ def parse_and_validate_args():
 
 if __name__ == '__main__':
     args = parse_and_validate_args()
-    lhub.log.log_level = args.log_level
 
     lhub.api.LogicHubAPI.http_timeout_default = args.timeout
     # log = lhub.log.Logger()
     # log.debug(f"Setting custom HTTP timeout: {args.timeout}")
 
     # ToDo Add option to provide the connection label up front when the script is invoked
-    Shell().cmdloop()
+    Shell(log_level=args.log_level).cmdloop()

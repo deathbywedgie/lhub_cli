@@ -6,16 +6,13 @@ from dataclasses_json import dataclass_json
 from lhub import LogicHub
 from .encryption import Encryption
 import getpass
-from .common.config import dict_to_ini_file
+from .common.config import dict_to_ini_file, list_credential_files
+from .statics import CREDENTIALS_FILE_NAME, LHUB_CONFIG_PATH, PREFERENCES_FILE_NAME
 from .common.shell import query_yes_no
 from requests.exceptions import SSLError
 from .exceptions.base import CLIValueError
 import sys
-
-# Over-writable/configurable static variables
-LHUB_CONFIG_PATH = os.path.join(str(Path.home()), ".logichub")
-CREDENTIALS_FILE_NAME = "credentials"
-PREFERENCES_FILE_NAME = "preferences"
+from .log import generate_logger, ExpectedLoggerTypes
 
 
 @dataclass_json
@@ -94,9 +91,12 @@ class LhubConfig:
     credentials_file_name = CREDENTIALS_FILE_NAME
     __credentials_file_modified_time = None
 
-    def __init__(self, credentials_file_name=None):
+    def __init__(self, credentials_file_name=None, logger: ExpectedLoggerTypes = None, log_level=None):
+        self.__log = logger or generate_logger(name=__name__, level=log_level)
+        if log_level:
+            self.__log.setLevel(log_level)
         if not os.path.exists(LHUB_CONFIG_PATH):
-            print(f"Default config path not found. Creating: {LHUB_CONFIG_PATH}")
+            self.__log.info(f"Default config path not found. Creating: {LHUB_CONFIG_PATH}")
             __lhub_path = Path(LHUB_CONFIG_PATH)
             __lhub_path.mkdir(parents=True, exist_ok=True)
 
@@ -104,17 +104,7 @@ class LhubConfig:
             self.credentials_file_name = f"{CREDENTIALS_FILE_NAME}-{credentials_file_name}"
         self.credentials_path = os.path.join(LHUB_CONFIG_PATH, self.credentials_file_name)
         self.__load_credentials_file()
-        self.encryption = Encryption(LHUB_CONFIG_PATH)
-
-    @property
-    def existing_credential_files(self):
-        return [CREDENTIALS_FILE_NAME] + sorted(list(set(
-            [
-                f.removeprefix(f'{CREDENTIALS_FILE_NAME}-')
-                for f in os.listdir(LHUB_CONFIG_PATH)
-                if f.startswith(f'{CREDENTIALS_FILE_NAME}-')
-            ]
-        )))
+        self.encryption = Encryption(LHUB_CONFIG_PATH, logger=self.__log, log_level=log_level)
 
     def write_credential_file(self, explicit_config: dict = None):
         if explicit_config is None:
@@ -128,7 +118,7 @@ class LhubConfig:
                 if query_yes_no(f"No credential file found by name {self.credentials_file_name}. Create new file now?"):
                     self.write_credential_file(explicit_config={})
                 else:
-                    print("Aborted.", file=sys.stderr)
+                    self.__log.fatal("Aborted by user.")
                     sys.exit(1)
             else:
                 self.write_credential_file(explicit_config={})
@@ -137,6 +127,7 @@ class LhubConfig:
         if self.__full_config and self.__credentials_file_modified_time == file_modified:
             return
         self.__credentials_file_modified_time = file_modified
+        self.__log.debug(f"Loading credential file: {self.credentials_file_name} [{self.credentials_path}]")
         self.__full_config = ConfigObj(self.credentials_path)
 
     @property
@@ -159,9 +150,10 @@ class LhubConfig:
 
     def delete_connection(self, instance_label):
         if not self.__full_config.get(instance_label):
-            print(f"No connection found for label: {instance_label}", file=sys.stderr)
+            self.__log.error(f"No connection found: {instance_label=}")
             return
         else:
+            self.__log.debug(f"Deleting connection: {instance_label=}")
             del self.__full_config[instance_label]
         self.write_credential_file()
 
@@ -169,7 +161,7 @@ class LhubConfig:
         if self.credential_file_changed:
             self.reload()
         if instance_label not in self.__full_config:
-            print(f"No connection found for label: {instance_label}", file=sys.stderr)
+            self.__log.error(f"No connection found: {instance_label=}")
             return
         # Make a copy of the dict, otherwise this will only work once, and it
         # will fail with a decryption error any subsequent calls for the same instance
@@ -182,6 +174,8 @@ class LhubConfig:
     def create_instance(self, instance_label, server=None, auth_type=None, api_key=None, username=None, password=None, verify_ssl=None):
 
         def verify_lhub_connection():
+            verify = True if verify_ssl is None else verify_ssl
+            self.__log.debug(f"Testing connectivity and authentication: {server=} {username=} {verify=}")
             _ = LogicHub(hostname=server, username=username, password=password, api_key=api_key, verify_ssl=verify_ssl)
 
         instance_label = instance_label.strip()
@@ -198,7 +192,7 @@ class LhubConfig:
             # If a password was provided but no API key, assume password auth
             auth_type = 'password'
         if api_key and not password:
-            # If a API key was provided but no password, assume password auth
+            # If an API key was provided but no password, assume password auth
             auth_type = 'api_key'
 
         while not server:
@@ -268,11 +262,14 @@ class LogicHubConnection:
     # preferences: Preferences = None
     credentials = None
 
-    # ToDo Hide this (dunder) when finished developing
     config: LhubConfig = None
+    log: ExpectedLoggerTypes
 
-    def __init__(self, instance_alias=None, **kwargs):
-        self.config = LhubConfig(**kwargs)
+    def __init__(self, instance_alias=None, logger: ExpectedLoggerTypes = None, log_level=None, **kwargs):
+        self.log = logger or generate_logger(name=__name__, instance_name=instance_alias, level=log_level)
+        if log_level and hasattr(self.log, "setLevel"):
+            self.log.setLevel(log_level)
+        self.config = LhubConfig(logger=self.log, **kwargs)
         # ToDo Not yet used, but the groundwork has been laid. Revisit and enable this when ready to begin putting it to use.
         # if not self.preferences:
         #     self.preferences = Preferences()
@@ -294,7 +291,7 @@ class LogicHubConnection:
         name = name.strip()
         _new_credentials = self.config.get_instance(name)
         if not _new_credentials:
-            print(f"No instance found by name \"{name}.\" Creating new connection...")
+            self.log.warning(f"No instance found by name \"{name}.\" Creating new connection...")
             self.config.create_instance(name)
             _new_credentials = self.config.get_instance(name)
 
