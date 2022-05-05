@@ -21,7 +21,7 @@ class InvalidUserInput(BaseAppError):
     """Exception caused by user input"""
     message = "Invalid input from user"
 
-    def __init__(self, message=None, input_var=None, *args, **kwargs):
+    def __init__(self, input_var=None, message=None, *args, **kwargs):
         super().__init__(message=message, input_var=input_var, *args, **kwargs)
 
 

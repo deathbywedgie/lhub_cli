@@ -6,9 +6,12 @@ class LhCliBaseException(Exception):
     """
     message = "An exception was raised"
 
-    def __init__(self, message=None, *args, **kwargs):
+    def __init__(self, message=None, input_var=None, *args, **kwargs):
+        self.input = input_var
         if message:
             self.message = message
+        elif input_var:
+            self.message += f": {input_var}"
         super().__init__(*args, **kwargs)
 
 
