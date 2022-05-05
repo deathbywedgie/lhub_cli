@@ -10,8 +10,6 @@ from ..log import generate_logger, ExpectedLoggerTypes
 TABLE_FORMATS = tabulate_formats
 
 
-# ToDo Rewrite to make this a part of the LogicHubCLI instance instead of needing the "session" input
-
 class Command:
     __output_type = "json_pretty"
     supported_output_types = ["csv", "json", "json_pretty", "raw", "raw_pretty", "table"]
