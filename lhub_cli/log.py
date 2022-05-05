@@ -13,10 +13,10 @@ class Logging:
 
     def __init__(self, self_obj=None, log_level=None, **kwargs):
         log_level = log_level or Logging.level
-        self.log = generate_logger(self_obj=self_obj or self, level=log_level, **kwargs)
+        self.log = generate_logger(name=__name__, level=log_level, **kwargs)
 
 
-def generate_logger(self_obj, instance_name=None, level=None, include_file_info=False, **kwargs):
+def generate_logger(name, instance_name=None, level=None, include_file_info=False, **kwargs):
     """
     Generate a logger object for use throughout lhub and lhub_cli
 
@@ -41,7 +41,7 @@ def generate_logger(self_obj, instance_name=None, level=None, include_file_info=
         root_log.setLevel(level)
 
     # lhub_cli itself will use its own logger
-    logger = logging.getLogger(self_obj.__name__ if self_obj else __name__)
+    logger = logging.getLogger(name)
     if level:
         logger.setLevel(level)
 

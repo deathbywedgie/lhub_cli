@@ -13,7 +13,7 @@ class Encryption:
     private_default = ".lhub.pem"
 
     def __init__(self, key_location, private_key_name=None, pub_file_name=None, logger: ExpectedLoggerTypes = None, log_level=None):
-        self.__log = logger if logger else generate_logger(self_obj=self, level=log_level)
+        self.__log = logger if logger else generate_logger(name=__name__, level=log_level)
         if log_level:
             self.__log.setLevel(log_level)
         if not os.path.exists(key_location):

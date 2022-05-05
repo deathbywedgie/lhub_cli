@@ -96,7 +96,7 @@ class LhubConfig:
     __credentials_file_modified_time = None
 
     def __init__(self, credentials_file_name=None, logger: ExpectedLoggerTypes = None, log_level=None):
-        self.__log = logger or generate_logger(self_obj=self, level=log_level)
+        self.__log = logger or generate_logger(name=__name__, level=log_level)
         if log_level:
             self.__log.setLevel(log_level)
         if not os.path.exists(LHUB_CONFIG_PATH):
@@ -280,7 +280,7 @@ class LogicHubConnection:
     log: ExpectedLoggerTypes
 
     def __init__(self, instance_alias=None, logger: ExpectedLoggerTypes = None, log_level=None, **kwargs):
-        self.log = logger or generate_logger(self_obj=self, instance_name=instance_alias, level=log_level)
+        self.log = logger or generate_logger(name=__name__, instance_name=instance_alias, level=log_level)
         if log_level and hasattr(self.log, "setLevel"):
             self.log.setLevel(log_level)
         self.config = LhubConfig(logger=self.log, **kwargs)

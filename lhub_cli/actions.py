@@ -32,7 +32,7 @@ class Actions:
         self.lhub = session
         self.__config = config
         self.__instance_name = instance_label
-        self.__log = logger or generate_logger(self_obj=self, instance_name=instance_label)
+        self.__log = logger or generate_logger(name=__name__, instance_name=instance_label)
 
     def __set_export_path(self, parent_folder, export_type):
         current_date = time.strftime("%Y-%m-%d")
