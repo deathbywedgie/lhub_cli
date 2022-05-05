@@ -1,9 +1,23 @@
 import argparse
 from lhub_cli.common.output import SUPPORTED_OUTPUT_TYPES, SUPPORTED_TABLE_FORMATS
 from ..log import Logging
+from typing import Union
+
+parser_types = Union[argparse.ArgumentParser, argparse._ArgumentGroup]
 
 
-def add_script_output_args(parser: argparse.ArgumentParser, include_log_level=True, default_output=None):
+def add_script_logging_args(parser: parser_types, default_log_level=None):
+    logging = parser.add_mutually_exclusive_group()
+    logging.add_argument(
+        "-log", "--level", default=default_log_level or "INFO",
+        help="Set logging level",
+        choices=['critical', 'fatal', 'error', 'warn', 'warning', 'info', 'debug', 'notset']
+    )
+    logging.add_argument("--debug", action="store_true", help="Enable debug logging (shortcut)")
+    logging.add_argument("-vv", "--verbose", action="store_true", help="Enable very verbose logging")
+
+
+def add_script_output_args(parser: parser_types, include_log_level=True, default_output=None):
     if not default_output:
         default_output = "table"
     elif default_output not in SUPPORTED_OUTPUT_TYPES:
@@ -35,14 +49,7 @@ def add_script_output_args(parser: argparse.ArgumentParser, include_log_level=Tr
     )
 
     if include_log_level:
-        logging = output.add_mutually_exclusive_group()
-        logging.add_argument(
-            "-log", "--level", default="INFO",
-            choices=['CRITICAL', 'FATAL', 'ERROR', 'WARN', 'WARNING', 'INFO', 'DEBUG', 'NOTSET', 'critical', 'fatal', 'error', 'warn', 'warning', 'info', 'debug'],
-            help="Set logging level"
-        )
-        logging.add_argument("--debug", action="store_true", help="Enable debug logging (shortcut)")
-        logging.add_argument("-vv", "--verbose", action="store_true", help="Enable very verbose logging")
+        add_script_logging_args(output)
 
 
 def finish_parser_args(parser: argparse.ArgumentParser, **kwargs):
@@ -53,7 +60,7 @@ def finish_parser_args(parser: argparse.ArgumentParser, **kwargs):
         if not final_args.verbose:
             # Doing this first before setting any other log level prevents enabling debug logs for urllib3 and any other modules which use logging
             _ = Logging()
-        log_level = final_args.level.upper().strip()
+        log_level = final_args.level.upper()
         if final_args.debug or final_args.verbose:
             log_level = "DEBUG"
         Logging.level = log_level
