@@ -135,7 +135,8 @@ class LogicHubStream:
                 self.update_batches()
                 if not self.batches.running:
                     print()
-            log.info("\nReady.\n")
+            log.info("Ready.")
+            print("\nReady.\n")
 
         batch_id = int(re.sub(r'\D+', '', batch_dict['id']))
         _initial_state = batch_dict['state']
