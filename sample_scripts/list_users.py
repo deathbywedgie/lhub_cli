@@ -21,9 +21,9 @@ def get_args():
 
     # Required inputs
     parser.add_argument("instance_names", nargs="*", help="Names of specific instances from stored config (default: show all)")
-    parser.add_argument("-cred", "--credentials_file_name", default=None, help=f"Alternate credentials file name to use (default: \"credentials\"{existing_creds_str})")
 
     # Optional inputs
+    parser.add_argument("-cred", "--credentials_file_name", default=None, help=f"Alternate credentials file name to use (default: \"credentials\"{existing_creds_str})")
     parser.add_argument("-i", "--inactive", action="store_true", help="Include inactive users in the results")
 
     # Add standard output arg definitions:
