@@ -19,9 +19,12 @@ class Shell(cmd.Cmd):
 
     def __init__(self, logger: ExpectedLoggerTypes = None, log_level=None):
         super().__init__()
-        self.log = logger or generate_logger(name=__name__, level=log_level or "INFO")
-        if log_level:
-            self.log.setLevel(log_level)
+        if logger:
+            self.log = logger or generate_logger(name=__name__, level=log_level or "INFO")
+            if log_level and hasattr(self.log, "setLevel"):
+                self.log.setLevel(log_level)
+        else:
+            self.log = generate_logger(name=__name__, level=log_level or "INFO")
         if not self.connection:
             self.connection = LogicHubConnection(logger=self.log)
 
