@@ -1,6 +1,8 @@
 import csv
 import json
 import os
+from ..exceptions.app import ColumnNotFound
+
 
 from tabulate import tabulate, tabulate_formats
 
@@ -95,6 +97,8 @@ def print_fancy_lists(results, output_type="table", table_format=None, ordered_h
         for n in range(len(results)):
             new_entry = {}
             for k in ordered_headers:
+                if k not in results[n]:
+                    raise ColumnNotFound(column_name=k)
                 new_entry[k] = results[n][k]
             new_rows.append(new_entry)
         results = new_rows
