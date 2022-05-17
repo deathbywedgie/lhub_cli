@@ -39,10 +39,11 @@ def get_args():
     )
 
 
-def main():
-    args = get_args()
-    log = args.LOGGER
+args = get_args()
+log = args.LOGGER
 
+
+def main():
     if args.instance_names:
         instances = args.instance_names
     else:
@@ -116,3 +117,5 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         print("Control-C Pressed, stopping...", file=stderr)
+    except:
+        log.exception("Script failed with exception")
