@@ -10,6 +10,7 @@ from .connection_manager import LogicHubConnection
 from .common.output import print_fancy_lists
 from numbers import Number
 from .log import generate_logger, ExpectedLoggerTypes
+from typing import Union
 
 # ToDo NEXT: Follow the same formula from "export_playbooks" to add support for exporting other resource types as well
 #  * custom lists
@@ -144,6 +145,15 @@ class Actions:
     @staticmethod
     def _reformat_users(users: list):
         return [Actions._reformat_user(user) for user in users]
+
+    def create_user(self, username, email, authentication_type: Union[str, dict] = None, group_names: list = None, group_ids: list = None):
+        return self.__lhub.actions.create_user(
+            username=username,
+            email=email,
+            authentication_type=authentication_type or "password",
+            group_names=group_names or ["Everyone"],
+            group_ids=group_ids,
+        )
 
     def list_users(self, print_output=True, return_results=True, show_hostname=False, sort_order=None, attributes: list = None, hide_inactive=True, **print_kwargs):
         required_columns = ["username"]
