@@ -19,7 +19,7 @@ def add_script_logging_args(parser: parser_types, default_log_level=None):
     logging.add_argument("-vv", "--verbose", action="store_true", help="Enable very verbose logging")
 
 
-def add_script_output_args(parser: parser_types, include_log_level=True, default_output=None):
+def add_script_output_args(parser: parser_types, include_log_level: bool = True, default_output=None):
     if not default_output:
         default_output = "table"
     elif default_output not in SUPPORTED_OUTPUT_TYPES:
@@ -54,18 +54,28 @@ def add_script_output_args(parser: parser_types, include_log_level=True, default
         add_script_logging_args(output)
 
 
-def finish_parser_args(parser: argparse.ArgumentParser, **kwargs):
-    # _ = kwargs.pop("include_log_level", None)
+def finish_parser_args(parser: argparse.ArgumentParser, include_log_level: bool = True, **kwargs):
+    # To prevent duplication of logging lines, leave include_log_level out when calling add_script_output_args
+    kwargs.update({"include_log_level": False})
     add_script_output_args(parser=parser, **kwargs)
+    if include_log_level is not False:
+        return finish_parser_args_with_logger_only(parser)
     final_args = parser.parse_args()
-    if kwargs.get("include_log_level", True) is not False:
-        if not final_args.verbose:
-            # Doing this first before setting any other log level prevents enabling debug logs for urllib3 and any other modules which use logging
-            _ = Logging()
-        log_level = final_args.level.upper()
-        if final_args.debug or final_args.verbose:
-            log_level = "DEBUG"
-        Logging.level = log_level
+    new_logger = Logging()
+    final_args.LOGGER = new_logger.log
+    return final_args
+
+
+def finish_parser_args_with_logger_only(parser: argparse.ArgumentParser):
+    add_script_logging_args(parser)
+    final_args = parser.parse_args()
+    if not final_args.verbose:
+        # Doing this first before setting any other log level prevents enabling debug logs for urllib3 and any other modules which use logging
+        _ = Logging()
+    log_level = final_args.level.upper()
+    if final_args.debug or final_args.verbose:
+        log_level = "DEBUG"
+    Logging.level = log_level
     new_logger = Logging()
     final_args.LOGGER = new_logger.log
     return final_args
