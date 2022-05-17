@@ -3,8 +3,9 @@
 import argparse
 import json
 import sys
-from requests.exceptions import HTTPError
+
 from lhub.exceptions.base import LhBaseException
+from requests.exceptions import HTTPError
 
 import lhub_cli
 
@@ -33,21 +34,6 @@ cli = lhub_cli.LogicHubCLI(
     log_level="DEBUG" if args.debug else None
 )
 
-# Choose the API call or Action to execute
-# Direct API calls:
-#   cli.session.api
-# Predefined actions for multiple calls or customized output:
-#   cli.session.actions
-# Examples:
-#   cli.session.api.list_fields()
-#   cli.session.api.list_playbooks()
-#   cli.session.api.list_streams()
-#   vs.
-#   cli.session.actions.list_fields(map_mode="name")
-#   cli.session.actions.list_playbooks(map_mode="id")
-#   cli.session.actions.list_streams()
-
-# def create_user(self, username, email, authentication_type=None, group_names: list = None, group_ids: list = None):
 try:
     results = cli.session.actions.delete_user_by_name(usernames=args.user)
 except HTTPError as e:
@@ -58,4 +44,3 @@ except LhBaseException as e:
     sys.exit(1)
 
 print(json.dumps(results, indent=2))
-# print(results)
