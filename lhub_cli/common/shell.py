@@ -39,3 +39,37 @@ def query_yes_no(question, default: (str, bool) = None):
             return default
         else:
             sys.stdout.write("Please respond with one of the following: y/n/yes/no\n\n")
+
+
+def main_script_wrapper(func, *args, **kwargs):
+    from ..exceptions.base import LhCliBaseException
+    from lhub.exceptions.base import LhBaseException
+    from requests.exceptions import HTTPError
+
+    logger = kwargs.pop("logger", None)
+    if not logger:
+        from ..log import Logging
+        logger = Logging.DEFAULT_LOGGER
+    exit_code = 0
+    try:
+        func(*args, **kwargs)
+    except SystemExit:
+        pass
+    except KeyboardInterrupt:
+        print("Control-C Pressed, stopping...", file=sys.stderr)
+    except (LhBaseException, LhCliBaseException, HTTPError) as e:
+        exit_code = 1
+        message = getattr(e, "message", None)
+        if not message and isinstance(e, (LhBaseException, LhCliBaseException)):
+            message = str(e)
+        if not message:
+            message = repr(e)
+        logger.critical(f"Failed with exception: {message}", file=sys.stderr)
+
+        if last_response_status := getattr(e, "last_response_status", None):
+            logger.debug(f"Last status: {last_response_status}")
+        if last_response_text := getattr(e, "last_response_text", None):
+            logger.debug.print(f"Last server response: {last_response_text}")
+    except:
+        logger.exception("Script failed with exception")
+    sys.exit(exit_code)
