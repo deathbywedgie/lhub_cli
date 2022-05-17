@@ -9,11 +9,15 @@ ExpectedLoggerTypes = [structlog.types.BindableLogger]
 
 
 class Logging:
+    DEFAULT_LOGGER = None
     level = "INFO"
 
     def __init__(self, name=None, log_level=None, **kwargs):
+        global DEFAULT_LOGGER
         log_level = log_level or Logging.level
         self.log = generate_logger(name=name or __name__, level=log_level, **kwargs)
+        if Logging.DEFAULT_LOGGER is None:
+            Logging.DEFAULT_LOGGER = self.log
 
 
 def generate_logger(name, instance_name=None, level=None, include_file_info=False, **kwargs):
