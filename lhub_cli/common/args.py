@@ -15,7 +15,7 @@ def add_script_logging_args(parser: parser_types, default_log_level=None):
         help="Set logging level",
         choices=['critical', 'fatal', 'error', 'warn', 'warning', 'info', 'debug', 'notset']
     )
-    logging.add_argument("--debug", action="store_true", help="Enable debug logging (shortcut)")
+    logging.add_argument("-v", "--debug", action="store_true", help="Enable debug logging (shortcut)")
     logging.add_argument("-vv", "--verbose", action="store_true", help="Enable very verbose logging")
 
 
