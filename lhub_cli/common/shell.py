@@ -50,6 +50,9 @@ def main_script_wrapper(func, *args, **kwargs):
     if not logger:
         from ..log import Logging
         logger = Logging.DEFAULT_LOGGER
+        if not logger:
+            _logger = Logging()
+            logger = _logger.log
     exit_code = 0
     try:
         func(*args, **kwargs)
