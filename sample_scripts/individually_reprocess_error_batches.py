@@ -198,7 +198,7 @@ log = generate_logger(__name__, level=LOG_LEVEL)
 def main():
     global log
     connection_name = args.instance_name
-    log = log.new(connection=connection_name, stream=args.stream_id)
+    log = log.new(connection=connection_name, stream_id=args.stream_id)
     batch_limit = args.limit if args.limit and args.limit > 0 else 9999999
     log.debug(f"Batch limit set to {batch_limit}")
 
