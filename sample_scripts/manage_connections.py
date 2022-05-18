@@ -28,11 +28,12 @@ def get_args():
     connection.add_argument("-p", "--password", nargs='?', type=str, help="Optional: connection password", default=None)
     connection.add_argument("-n", "--no", action="store_true", help="Disable SSL verification")
 
-    return build_args_and_logger(
+    final_args, logger = build_args_and_logger(
         parser=_parser,
         include_credential_file_arg=True,
         include_logging_args=True,
     )
+    return final_args, logger.log
 
 
 def print_instance_details(_label, _config):
@@ -47,7 +48,8 @@ def print_instance_details(_label, _config):
             print(f"api_key: {_config.api_key}")
 
 
-args, logger = get_args()
+# Must be run outside of main in order for the full effect of verbose logging
+args, log = get_args()
 VERIFY_SSL = args.no is False
 SHOW_SECURE = args.show_secure
 

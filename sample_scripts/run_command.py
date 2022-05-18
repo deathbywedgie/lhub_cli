@@ -47,11 +47,11 @@ def parse_and_validate_args():
         log.critical("command cannot be blank")
         sys.exit(1)
 
-    return _final_args, _logger
+    return _final_args, _logger.log
 
 
-args, logger = parse_and_validate_args()
-log = logger.log
+# Must be run outside of main in order for the full effect of verbose logging
+args, log = parse_and_validate_args()
 
 
 def main():

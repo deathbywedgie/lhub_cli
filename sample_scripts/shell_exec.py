@@ -14,14 +14,16 @@ def parse_and_validate_args():
     connection.add_argument("--ignore_ssl", action="store_true", help="Ignore SSL warnings")
     connection.add_argument("-ti", "--timeout", metavar="<sec>", type=int, default=120, help="HTTP request timeout, except for logon (default: 120)")
 
-    return lhub_cli.common.args.build_args_and_logger(
+    final_args, logger = lhub_cli.common.args.build_args_and_logger(
         parser=_parser,
         include_logging_args=True,
         # default_log_level="INFO",
     )
+    return final_args, logger.log
 
 
-args, _ = parse_and_validate_args()
+# Must be run outside of main in order for the full effect of verbose logging
+args, log = parse_and_validate_args()
 
 
 def main():

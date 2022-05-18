@@ -44,11 +44,12 @@ def get_args():
     # Optional args:
     _parser.add_argument("-l", "--limit", metavar="INT", type=int, default=None, help=f"Set the maximum number of batches to reprocess (default: None)")
 
-    return build_args_and_logger(
+    final_args, logger = build_args_and_logger(
         parser=_parser,
         include_logging_args=True,
         default_log_level=DEFAULT_LOG_LEVEL
     )
+    return final_args, logger.log
 
 
 class Batches:
@@ -185,9 +186,9 @@ def update_logger(**kwargs):
     log = log.new(**update_logger.kwargs)
 
 
-args, logger = get_args()
+# Must be run outside of main in order for the full effect of verbose logging
+args, log = get_args()
 connection_name = args.instance_name
-log = logger.log
 update_logger(connection=connection_name, stream_id=args.stream_id)
 
 
@@ -212,10 +213,10 @@ def main():
     if not initial_error_count:
         log.debug("No error batches found")
         print(f"No error batches found")
+        return
 
-    else:
-        log.info(f"{initial_error_count} error batches found")
-        print(f"{initial_error_count} error batches found")
+    log.info(f"{initial_error_count} error batches found")
+    print(f"{initial_error_count} error batches found")
 
     while error_batches_remaining:
         log.info("Error batches remaining", batch_number=initial_error_count - len(error_batches_remaining) + 1, total_batches=initial_error_count)

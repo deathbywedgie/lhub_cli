@@ -33,7 +33,7 @@ def get_args():
     elif final_parser.quiet:
         OUTPUT_LEVEL = 1
 
-    return final_parser, logger
+    return final_parser, logger.log
 
 
 def print_quiet(msg):
@@ -46,7 +46,8 @@ def print_normal(msg):
         print(msg)
 
 
-args, _ = get_args()
+# Must be run outside of main in order for the full effect of verbose logging
+args, log = get_args()
 
 
 def main():

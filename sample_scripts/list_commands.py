@@ -18,17 +18,18 @@ def get_args():
     #         "-o", "--output" (Output style, e.g. table, csv, json, json-pretty)
     #         "-t", "--table_format" (for output style of table, set a specific table style, such as plain, grid, and jira)
     # Also sets logging automatically
-    return lhub_cli.common.args.build_args_and_logger(
+    final_args, logger = lhub_cli.common.args.build_args_and_logger(
         parser=_parser,
         include_credential_file_arg=True,
         include_list_output_args=True,
         include_logging_args=True,
         # default_output="table",
     )
+    return final_args, logger.log
 
 
-args, logger = get_args()
-log = logger.log
+# Must be run outside of main in order for the full effect of verbose logging
+args, log = get_args()
 log_level = args.LOG_LEVEL
 credentials_file_name = args.credentials_file_name
 

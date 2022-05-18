@@ -22,15 +22,17 @@ def get_args():
     _parser.add_argument("instance_name", help="Nickname of the instance from stored config")
     _parser.add_argument("batch_ids", type=int, nargs='+', help="Batch IDs")
 
-    return build_args_and_logger(
+    final_args, logger = build_args_and_logger(
         parser=_parser,
         include_credential_file_arg=True,
         include_logging_args=True,
         default_log_level=LOG_LEVEL,
     )
+    return final_args, logger.log
 
 
-args, logger = get_args()
+# Must be run outside of main in order for the full effect of verbose logging
+args, log = get_args()
 
 
 def main():

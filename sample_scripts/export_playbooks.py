@@ -26,10 +26,11 @@ def get_args():
 
     if not final_parser.limit:
         final_parser.limit = None
-    return final_parser, logger
+    return final_parser, logger.log
 
 
-args, _ = get_args()
+# Must be run outside of main in order for the full effect of verbose logging
+args, log = get_args()
 
 
 def main():
