@@ -8,26 +8,16 @@ import argparse
 import re
 import time
 from math import floor
-from sys import stderr
+from datetime import datetime
 
-import lhub
-from lhub.common.time import epoch_time_to_str
+from lhub import LogicHub
 
-from lhub_cli.log import generate_logger
-from lhub_cli.common.args import add_script_logging_args
+from lhub_cli.common.args import build_args_and_logger
+from lhub_cli.common.shell import main_script_wrapper
 from lhub_cli.connection_manager import LogicHubConnection
 
-# ToDo Currently this script pulls a list of ALL batches and their states in
-#      order to check on the status of a batch that is being reprocessed,
-#      because the API for checking a single batch's status does not yet support
-#      API key auth. Revisit once this is resolved in order to make the script
-#      more efficient and reduce the load on LogicHub.
-
-# ToDo Add an option to reprocess all batches, regardless of state (perhaps based on date or something)
-
-
 # Static/configurable vars
-LOG_LEVEL = "WARNING"
+DEFAULT_LOG_LEVEL = "WARNING"
 STATES_TO_REPROCESS = ['error', 'canceled']
 
 # Global variables
@@ -45,19 +35,20 @@ STATES = {
 
 
 def get_args():
-    global LOG_LEVEL, log
-    # Range of available args and expected input
-    parser = argparse.ArgumentParser(description="Process error batches one at a time")
+    _parser = argparse.ArgumentParser(description="Process error batches one at a time")
 
     # Inputs expected from user
-    parser.add_argument("instance_name", help="Nickname of the instance from stored config")
-    parser.add_argument("stream_id", type=int, help="Stream ID (INT)")
+    _parser.add_argument("instance_name", help="Nickname of the instance from stored config")
+    _parser.add_argument("stream_id", type=int, help="Stream ID (INT)")
 
     # Optional args:
-    parser.add_argument("-l", "--limit", metavar="INT", type=int, default=None, help=f"Set the maximum number of batches to reprocess (default: None)")
-    add_script_logging_args(parser)
+    _parser.add_argument("-l", "--limit", metavar="INT", type=int, default=None, help=f"Set the maximum number of batches to reprocess (default: None)")
 
-    return parser.parse_args()
+    return build_args_and_logger(
+        parser=_parser,
+        include_logging_args=True,
+        default_log_level=DEFAULT_LOG_LEVEL
+    )
 
 
 class Batches:
@@ -81,13 +72,12 @@ class LogicHubStream:
     __stream_name = None
 
     def __init__(self, stream_id, **kwargs):
-        global log
         self.stream_id = re.sub(r'\D+', '', stream_id) if isinstance(stream_id, str) else stream_id
         log.debug("Initializing LogicHub session")
-        self.session = lhub.LogicHub(**kwargs, logger=log, log_level=LOG_LEVEL)
+        self.session = LogicHub(**kwargs)
         print(f"Checking status of stream \"{self.stream_name}\"")
         print(f"\tURL: {self.session.api.url.stream_by_id.format(self.stream_id)}")
-        log = log.new(stream=self.stream_name)
+        update_logger(stream=self.stream_name)
         self.update_batches()
 
     @property
@@ -98,10 +88,9 @@ class LogicHubStream:
 
     @property
     def seconds_to_sleep_before_next_batch_check(self):
-        if self.seconds_since_last_batch_check is None:
+        if self.seconds_since_last_batch_check is None or (seconds_remaining := self.TIME_BETWEEN_STATUS_CHECKS - self.seconds_since_last_batch_check) <= 0:
             return 0
-        _sec = self.TIME_BETWEEN_STATUS_CHECKS - self.seconds_since_last_batch_check
-        return floor(0 if _sec < 0 else _sec)
+        return seconds_remaining
 
     @property
     def stream_details(self):
@@ -129,7 +118,7 @@ class LogicHubStream:
         # First check whether any batches are already running
         job_start = time.time()
         if self.batches.running:
-            log.warn(f"One or more batches currently executing. Waiting until the stream is idle.")
+            log.warning(f"One or more batches currently executing. Waiting until the stream is idle.")
             while self.batches.running:
                 print(f"    {len(self.batches.running)} batches in queue. (waited {int(time.time() - job_start)} seconds)", end='\r')
                 self.update_batches()
@@ -140,11 +129,11 @@ class LogicHubStream:
 
         batch_id = int(re.sub(r'\D+', '', batch_dict['id']))
         _initial_state = batch_dict['state']
-        batch_log = log.new(id=batch_id, state=_initial_state)
+        batch_log = log.new(batch_id=batch_id, state=_initial_state)
         batch_log.debug(
             f"Batch reprocess requested",
-            batch_start=epoch_time_to_str(batch_dict['from'] / 1000),
-            batch_end=epoch_time_to_str(batch_dict['to'] / 1000)
+            batch_start=self._epoch_time_to_str(batch_dict['from'] / 1000),
+            batch_end=self._epoch_time_to_str(batch_dict['to'] / 1000)
         )
         if batch_id not in self.error_batches:
             batch_log.warning(f"Batch state changed; no longer in error state")
@@ -161,7 +150,7 @@ class LogicHubStream:
             except KeyError:
                 batch_log.warning(f"Batch {batch_id} no longer found")
                 continue
-            batch_log = batch_log.new(state=batch_state)
+            batch_log = batch_log.new(batch_id=batch_id, state=batch_state)
             if STATES[batch_state] != 'pending':
                 if batch_state in STATES_TO_REPROCESS:
                     print()
@@ -171,7 +160,7 @@ class LogicHubStream:
                         if errors:
                             print()
                             for error in errors:
-                                log.error(f"Error returned: {error}")
+                                batch_log.error(f"Error returned: {error}")
                     except KeyError:
                         pass
                     exit(1)
@@ -180,44 +169,44 @@ class LogicHubStream:
             elif previous_state != batch_state:
                 print()
         print(f"    Finished!  (state: \"{batch_state}\" @ {floor(time.time() - job_start)} seconds)      ")
-        batch_log.info(f"Finished", run_time_seconds=floor(time.time() - job_start))
+        batch_log.info(f"Batch processing finished", run_time_seconds=floor(time.time() - job_start))
+
+    @staticmethod
+    def _epoch_time_to_str(time_sec):
+        dt = datetime.fromtimestamp(time_sec)
+        return dt.strftime("%Y-%m-%d %H:%M:%S")
 
 
-args = get_args()
-if args.verbose or args.debug:
-    LOG_LEVEL = "DEBUG"
-else:
-    LOG_LEVEL = args.level
+def update_logger(**kwargs):
+    global log
+    if not hasattr(update_logger, "kwargs"):
+        update_logger.kwargs = kwargs
+    update_logger.kwargs.update(kwargs)
+    log = log.new(**update_logger.kwargs)
 
-if not args.verbose:
-    # Doing this first as any other log level prevents enabling debug logs for urllib3 and any other modules which use logging
-    _ = generate_logger(__name__)
-log = generate_logger(__name__, level=LOG_LEVEL)
+
+args, logger = get_args()
+connection_name = args.instance_name
+log = logger.log
+update_logger(connection=connection_name, stream_id=args.stream_id)
 
 
 def main():
-    global log
-    connection_name = args.instance_name
-    log = log.new(connection=connection_name, stream_id=args.stream_id)
     batch_limit = args.limit if args.limit and args.limit > 0 else 9999999
     log.debug(f"Batch limit set to {batch_limit}")
 
     connection = LogicHubConnection(connection_name)
-    try:
-        session = LogicHubStream(
-            stream_id=args.stream_id,
-            api_key=connection.credentials.api_key,
-            password=connection.credentials.password,
-            **connection.credentials.to_dict()
-        )
-    except lhub.exceptions.app.StreamNotFound as e:
-        log.critical("FAILED", error=e.message)
-        return
+    session = LogicHubStream(
+        stream_id=args.stream_id,
+        api_key=connection.credentials.api_key,
+        password=connection.credentials.password,
+        **connection.credentials.to_dict()
+    )
 
     error_batches_remaining = [b for b in session.batches.error]
     initial_error_count = len(error_batches_remaining)
     if batch_limit and len(error_batches_remaining) > batch_limit:
-        log.warn(f"Limit exceeded. Grabbing only the oldest {batch_limit} batch{'' if batch_limit == 1 else 'es'} ({initial_error_count} total)")
+        log.warning(f"Limit exceeded. Grabbing only the oldest {batch_limit} batch{'' if batch_limit == 1 else 'es'} ({initial_error_count} total)")
         error_batches_remaining = error_batches_remaining[:batch_limit]
         initial_error_count = len(error_batches_remaining)
     if not initial_error_count:
@@ -225,20 +214,15 @@ def main():
         print(f"No error batches found")
 
     else:
-        log.debug(f"{initial_error_count} error batches found")
+        log.info(f"{initial_error_count} error batches found")
         print(f"{initial_error_count} error batches found")
 
     while error_batches_remaining:
-        log.info("Batches remaining", batch_number=initial_error_count - len(error_batches_remaining) + 1, total_batches=initial_error_count)
+        log.info("Error batches remaining", batch_number=initial_error_count - len(error_batches_remaining) + 1, total_batches=initial_error_count)
         print(f"\n{connection_name}, Stream {args.stream_id}\nBatch {initial_error_count - len(error_batches_remaining) + 1} of {initial_error_count}")
         batch = error_batches_remaining.pop(0)
         session.process_batch(batch)
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        print("\nControl-C Pressed; stopping...", file=stderr)
-        log.critical("Control-C Pressed; stopping...")
-        exit(1)
+    main_script_wrapper(main)
