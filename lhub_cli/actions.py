@@ -147,13 +147,15 @@ class Actions:
         return [Actions._reformat_user(user) for user in users]
 
     def create_user(self, username, email, authentication_type: Union[str, dict] = None, group_names: list = None, group_ids: list = None):
-        return self.__lhub.actions.create_user(
+        _result = self.__lhub.actions.create_user(
             username=username,
             email=email,
             authentication_type=authentication_type or "password",
             group_names=group_names or ["Everyone"],
             group_ids=group_ids,
         )
+        self.__log.info("User created successfully", username=username)
+        return _result
 
     def list_users(self, print_output=True, return_results=True, show_hostname=False, sort_order=None, attributes: list = None, hide_inactive=True, **print_kwargs):
         required_columns = ["username"]
