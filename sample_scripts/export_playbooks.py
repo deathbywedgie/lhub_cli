@@ -9,31 +9,38 @@ DEFAULT_EXPORT_LIMIT = 0
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description="Export all playbooks from a LogicHub server")
-    parser.add_argument("instance_label", type=str, help="Label (name) for the connection")
+    _parser = argparse.ArgumentParser(description="Export all playbooks from a LogicHub server")
+    _parser.add_argument("instance_name", help="Nickname of the instance from stored config")
 
     # Optional args:
-    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
-    parser.add_argument("-l", "--limit", type=int, default=DEFAULT_EXPORT_LIMIT, help=f"Optional: limit the number of playbooks to export (default: {DEFAULT_EXPORT_LIMIT or 'None'})")
-    parser.add_argument("-d", "--destination", type=str, default=None, help="Optional: specify the path for exports (default: new \"_exports\" folder in the current working directory")
+    _parser.add_argument("-l", "--limit", type=int, default=DEFAULT_EXPORT_LIMIT, help=f"Optional: limit the number of playbooks to export (default: {DEFAULT_EXPORT_LIMIT or 'None'})")
+    _parser.add_argument("-d", "--destination", type=str, default=None, help="Optional: specify the path for exports (default: new \"_exports\" folder in the current working directory")
 
-    _args = parser.parse_args()
-    if not _args.limit:
-        _args.limit = None
-    return _args
+    final_parser, logger = lhub_cli.common.args.build_args_and_logger(
+        parser=_parser,
+        include_credential_file_arg=True,
+        include_list_output_args=True,
+        include_logging_args=True,
+        default_log_level="INFO"
+    )
+
+    if not final_parser.limit:
+        final_parser.limit = None
+    return final_parser, logger
+
+
+args, _ = get_args()
 
 
 def main():
-    args = get_args()
     session = lhub_cli.LogicHubCLI(
-        args.instance_label,
-        # ToDo Add a better arg for this... should be able to specify any level
-        log_level="DEBUG" if args.debug else None
+        credentials_file_name=args.credentials_file_name,
+        instance_name=args.instance_name
     )
-    export_folder = EXPORT_FOLDER
-    if args.destination:
-        export_folder = args.destination
-    successful, failures = session.actions.export_playbooks(export_folder, limit=args.limit, return_summary=True)
+    successful, failures = session.actions.export_playbooks(
+        args.destination if args.destination else EXPORT_FOLDER,
+        limit=args.limit, return_summary=True
+    )
     if not successful:
         failed_str = "One or more playbooks failed to export:\n\n"
         for k, v in failures.items():
@@ -46,8 +53,4 @@ def main():
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        print("\nControl-C Pressed; stopping...")
-        exit(1)
+    lhub_cli.common.shell.main_script_wrapper(main)
