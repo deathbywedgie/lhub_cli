@@ -1,22 +1,21 @@
 import argparse
 from lhub_cli.common.output import SUPPORTED_OUTPUT_TYPES, SUPPORTED_TABLE_FORMATS
-from ..main import LogicHubCLI
-from ..connection_manager import LogicHubConnection
 from ..log import Logging
 from typing import Union
 
 parser_types = Union[argparse.ArgumentParser, argparse._ArgumentGroup]
+DEFAULT_LOG_LEVEL = "INFO"
 
 
-def add_script_logging_args(parser: parser_types, default_log_level=None):
+def add_script_logging_args(parser: parser_types, default_log_level=DEFAULT_LOG_LEVEL):
     logging = parser.add_mutually_exclusive_group()
     logging.add_argument(
-        "-log", "--level", default=default_log_level or "INFO",
+        "-log", "--level", dest="LOG_LEVEL", default=default_log_level,
         help="Set logging level",
         choices=['critical', 'fatal', 'error', 'warn', 'warning', 'info', 'debug', 'notset']
     )
-    logging.add_argument("-v", "--debug", action="store_true", help="Enable debug logging (shortcut)")
-    logging.add_argument("-vv", "--verbose", action="store_true", help="Enable very verbose logging")
+    logging.add_argument("-v", "--debug", dest="DEBUG", action="store_true", help="Enable debug logging (shortcut)")
+    logging.add_argument("-vv", "--verbose", dest="VERBOSE", action="store_true", help="Enable very verbose logging")
 
 
 def add_script_output_args(parser: parser_types, include_log_level: bool = True, default_output=None):
@@ -54,28 +53,33 @@ def add_script_output_args(parser: parser_types, include_log_level: bool = True,
         add_script_logging_args(output)
 
 
-def finish_parser_args(parser: argparse.ArgumentParser, include_log_level: bool = True, **kwargs):
-    # To prevent duplication of logging lines, leave include_log_level out when calling add_script_output_args
-    kwargs.update({"include_log_level": False})
-    add_script_output_args(parser=parser, **kwargs)
-    if include_log_level is not False:
-        return finish_parser_args_with_logger_only(parser)
-    final_args = parser.parse_args()
-    new_logger = Logging()
-    final_args.LOGGER = new_logger.log
-    return final_args
+def build_args_and_logger(
+        parser: argparse.ArgumentParser = None,
+        description: str = None,
+        include_list_output_args: bool = False,
+        include_logging_args: bool = False,
+        default_log_level: str = DEFAULT_LOG_LEVEL,
+        **table_kwargs
+) -> (argparse.Namespace, Logging):
+    parser = parser or argparse.ArgumentParser(description=description)
 
+    if include_list_output_args is True:
+        # To prevent duplication of logging lines, leave include_log_level out when calling add_script_output_args
+        table_kwargs["include_log_level"] = False
+        add_script_output_args(parser=parser, **table_kwargs)
 
-def finish_parser_args_with_logger_only(parser: argparse.ArgumentParser):
-    add_script_logging_args(parser)
+    if include_logging_args is True:
+        add_script_logging_args(parser, default_log_level=default_log_level)
+
     final_args = parser.parse_args()
-    if not final_args.verbose:
+
+    # in case include_log_level was not enabled, force the existence of certain log properties
+    final_args.DEBUG = getattr(final_args, "DEBUG", False)
+    final_args.VERBOSE = getattr(final_args, "VERBOSE", False)
+    final_args.LOG_LEVEL = "DEBUG" if final_args.DEBUG or final_args.VERBOSE else getattr(final_args, "LOG_LEVEL", DEFAULT_LOG_LEVEL).upper()
+
+    if not final_args.VERBOSE:
         # Doing this first before setting any other log level prevents enabling debug logs for urllib3 and any other modules which use logging
         _ = Logging()
-    log_level = final_args.level.upper()
-    if final_args.debug or final_args.verbose:
-        log_level = "DEBUG"
-    Logging.level = log_level
-    new_logger = Logging()
-    final_args.LOGGER = new_logger.log
-    return final_args
+    Logging.level = final_args.LOG_LEVEL
+    return final_args, Logging()
