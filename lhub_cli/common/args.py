@@ -77,6 +77,8 @@ def build_args_and_logger(
     final_args.DEBUG = getattr(final_args, "DEBUG", False)
     final_args.VERBOSE = getattr(final_args, "VERBOSE", False)
     final_args.LOG_LEVEL = "DEBUG" if final_args.DEBUG or final_args.VERBOSE else getattr(final_args, "LOG_LEVEL", DEFAULT_LOG_LEVEL).upper()
+    if final_args.LOG_LEVEL == "DEBUG" and not final_args.DEBUG:
+        final_args.DEBUG = True
 
     if not final_args.VERBOSE:
         # Doing this first before setting any other log level prevents enabling debug logs for urllib3 and any other modules which use logging
