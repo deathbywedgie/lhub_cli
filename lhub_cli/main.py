@@ -33,3 +33,8 @@ class LogicHubCLI:
             instance_label=self.__config.instance,
             logger=self.log
         )
+
+
+def list_all_instances(credentials_file_name=None):
+    config = LogicHubConnection(credentials_file_name=credentials_file_name)
+    return sorted(config.all_instances)
