@@ -1,5 +1,5 @@
 import argparse
-from lhub_cli.common.output import SUPPORTED_OUTPUT_TYPES, SUPPORTED_TABLE_FORMATS
+from .output import SUPPORTED_OUTPUT_TYPES, SUPPORTED_TABLE_FORMATS
 from ..log import Logging
 from typing import Union
 
