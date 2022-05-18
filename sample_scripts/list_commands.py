@@ -30,6 +30,7 @@ def get_args():
 args, logger = get_args()
 log = logger.log
 log_level = args.LOG_LEVEL
+credentials_file_name = args.credentials_file_name
 
 
 def main():
@@ -38,7 +39,7 @@ def main():
         instances = args.instance_names
     else:
         config = lhub_cli.connection_manager.LogicHubConnection(
-            credentials_file_name=args.credentials_file_name
+            credentials_file_name=credentials_file_name
         )
         instances = sorted(config.all_instances)
 
@@ -59,7 +60,7 @@ def main():
             log.debug(f"Verifying connection {n + 1}/{instance_count}")
             instance_sessions[instances[n]] = lhub_cli.LogicHubCLI(
                 instance_name=instances[n],
-                credentials_file_name=args.credentials_file_name
+                credentials_file_name=credentials_file_name
             )
 
         cycle = range(instance_count)

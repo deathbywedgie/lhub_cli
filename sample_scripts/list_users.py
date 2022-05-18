@@ -1,56 +1,43 @@
 #!/usr/bin/env python3
 
 import argparse
-from sys import stderr
 
 import lhub_cli
 from lhub_cli.common.output import print_fancy_lists
 import progressbar
 
-DEFAULT_LOG_LEVEL = "INFO"
-DEFAULT_OUTPUT = "table"
 
-
-# available args and expected input
 def get_args():
-    cred_files = lhub_cli.list_credential_files()
-    existing_creds_str = ''
-    if cred_files:
-        existing_creds_str = f', existing: {cred_files}'
-    parser = argparse.ArgumentParser(description="List all users from one or more LogicHub instances")
+    _parser = argparse.ArgumentParser(description="List all users from one or more LogicHub instances")
 
     # Required inputs
-    parser.add_argument("instance_names", nargs="*", help="Names of specific instances from stored config (default: show all)")
+    _parser.add_argument("instance_names", nargs="*", help="Names of specific instances from stored config (default: show all)")
 
     # Optional inputs
-    parser.add_argument("-cred", "--credentials_file_name", default=None, help=f"Alternate credentials file name to use (default: \"credentials\"{existing_creds_str})")
-    parser.add_argument("-i", "--inactive", action="store_true", help="Include inactive users in the results")
+    _parser.add_argument("-i", "--inactive", action="store_true", help="Include inactive users in the results")
 
     # Add standard output arg definitions:
     #         "-f", "--file" (Also write output to a file)
     #         "-o", "--output" (Output style, e.g. table, csv, json, json-pretty)
     #         "-t", "--table_format" (for output style of table, set a specific table style, such as plain, grid, and jira)
     # Also sets logging automatically
-    return lhub_cli.common.args.finish_parser_args(
-        parser,
-        default_output=DEFAULT_OUTPUT,
-        # Set include_log_level to False to drop log arg
-        # include_log_level=False
+    return lhub_cli.common.args.build_args_and_logger(
+        parser=_parser,
+        include_credential_file_arg=True,
+        include_list_output_args=True,
+        include_logging_args=True,
+        # default_output="table"
     )
 
 
-args = get_args()
-log = args.LOGGER
+args, logger = get_args()
+log = logger.log
+log_level = args.LOG_LEVEL
+credentials_file_name = args.credentials_file_name
 
 
 def main():
-    if args.instance_names:
-        instances = args.instance_names
-    else:
-        config = lhub_cli.connection_manager.LogicHubConnection(
-            credentials_file_name=args.credentials_file_name
-        )
-        instances = sorted(config.all_instances)
+    instances = args.instance_names or lhub_cli.list_all_instances(credentials_file_name)
 
     # For all available attributes, set: attributes = "*"
     # Examples: ["is_admin", "email", "groups", "is_deleted", "is_enabled", "auth_type", "id", "password_enabled", "sso_enabled"]
@@ -68,18 +55,18 @@ def main():
         instance_count = len(instances)
         cycle = range(instance_count)
 
-        if args.level != "DEBUG":
+        if log_level != "DEBUG":
             cycle = progressbar.progressbar(cycle)
             print(f"Verifying connections")
         for n in cycle:
             log.debug(f"Verifying connection {n + 1}/{instance_count}")
             instance_sessions[instances[n]] = lhub_cli.LogicHubCLI(
                 instance_name=instances[n],
-                credentials_file_name=args.credentials_file_name
+                credentials_file_name=credentials_file_name
             )
 
         cycle = range(instance_count)
-        if args.level != "DEBUG":
+        if log_level != "DEBUG":
             cycle = progressbar.progressbar(cycle)
             print(f"Fetching users")
         for n in cycle:
@@ -113,9 +100,4 @@ def main():
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        print("Control-C Pressed, stopping...", file=stderr)
-    except:
-        log.exception("Script failed with exception")
+    lhub_cli.common.shell.main_script_wrapper(main)
