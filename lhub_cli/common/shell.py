@@ -59,6 +59,7 @@ def main_script_wrapper(func, *args, **kwargs):
     except SystemExit:
         pass
     except KeyboardInterrupt:
+        print()
         logger.critical("Canceled by user")
         print("Control-C Pressed, stopping...", file=sys.stderr)
     except (LhBaseException, LhCliBaseException, RequestException) as e:
