@@ -1,44 +1,38 @@
 #!/usr/bin/env python3
 
 import argparse
-from sys import stderr
 
 import lhub_cli
 from lhub_cli.common.output import print_fancy_lists
 import progressbar
 
-DEFAULT_LOG_LEVEL = "INFO"
-DEFAULT_OUTPUT = "table"
 
-
-# available args and expected input
 def get_args():
-    cred_files = lhub_cli.list_credential_files()
-    existing_creds_str = ''
-    if cred_files:
-        existing_creds_str = f', existing: {cred_files}'
-    parser = argparse.ArgumentParser(description="List all commands from one or more LogicHub instances")
+    _parser = argparse.ArgumentParser(description="List all commands from one or more LogicHub instances")
 
     # Required inputs
-    parser.add_argument("instance_names", nargs="*", help="Names of specific instances from stored config (default: show all)")
-    parser.add_argument("-cred", "--credentials_file_name", default=None, help=f"Alternate credentials file name to use (default: \"credentials\"{existing_creds_str})")
+    _parser.add_argument("instance_names", nargs="*", help="Names of specific instances from stored config (default: show all)")
 
     # Add standard output arg definitions:
     #         "-f", "--file" (Also write output to a file)
     #         "-o", "--output" (Output style, e.g. table, csv, json, json-pretty)
     #         "-t", "--table_format" (for output style of table, set a specific table style, such as plain, grid, and jira)
     # Also sets logging automatically
-    return lhub_cli.common.args.finish_parser_args(
-        parser,
-        default_output=DEFAULT_OUTPUT,
-        # Set include_log_level to False to drop log arg
-        # include_log_level=False
+    return lhub_cli.common.args.build_args_and_logger(
+        parser=_parser,
+        include_credential_file_arg=True,
+        include_list_output_args=True,
+        include_logging_args=True,
+        # default_output="table",
     )
 
 
+args, logger = get_args()
+log = logger.log
+log_level = args.LOG_LEVEL
+
+
 def main():
-    args = get_args()
-    log = args.LOGGER
 
     if args.instance_names:
         instances = args.instance_names
@@ -58,7 +52,7 @@ def main():
         instance_count = len(instances)
         cycle = range(instance_count)
 
-        if args.level != "DEBUG":
+        if log_level != "DEBUG":
             cycle = progressbar.progressbar(cycle)
             print(f"Verifying connections")
         for n in cycle:
@@ -69,7 +63,7 @@ def main():
             )
 
         cycle = range(instance_count)
-        if args.level != "DEBUG":
+        if log_level != "DEBUG":
             cycle = progressbar.progressbar(cycle)
             print(f"Fetching commands")
         for n in cycle:
@@ -102,7 +96,4 @@ def main():
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        print("Control-C Pressed, stopping...", file=stderr)
+    lhub_cli.common.shell.main_script_wrapper(main)
