@@ -44,7 +44,7 @@ def query_yes_no(question, default: (str, bool) = None):
 def main_script_wrapper(func, *args, **kwargs):
     from ..exceptions.base import LhCliBaseException
     from lhub.exceptions.base import LhBaseException
-    from requests.exceptions import HTTPError
+    from requests.exceptions import RequestException
 
     logger = kwargs.pop("logger", None)
     if not logger:
@@ -59,15 +59,16 @@ def main_script_wrapper(func, *args, **kwargs):
     except SystemExit:
         pass
     except KeyboardInterrupt:
+        logger.critical("Canceled by user")
         print("Control-C Pressed, stopping...", file=sys.stderr)
-    except (LhBaseException, LhCliBaseException, HTTPError) as e:
+    except (LhBaseException, LhCliBaseException, RequestException) as e:
         exit_code = 1
         message = getattr(e, "message", None)
         if not message and isinstance(e, (LhBaseException, LhCliBaseException)):
             message = str(e)
         if not message:
             message = repr(e)
-        logger.critical(f"Failed with exception: {message}", file=sys.stderr)
+        logger.critical(f"Failed with exception: {message}")
 
         if last_response_status := getattr(e, "last_response_status", None):
             logger.debug(f"Last status: {last_response_status}")
