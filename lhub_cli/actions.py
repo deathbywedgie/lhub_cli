@@ -40,7 +40,7 @@ class Actions:
         _folder_counter = 0
         while True:
             _folder_counter += 1
-            _new_export_folder = os.path.join(parent_folder, f"{self.__lhub.api.url.server_name}_{export_type}_{current_date}_{_folder_counter}")
+            _new_export_folder = os.path.join(parent_folder, f"{self.__lhub.api.url.server_name}_{export_type}_{current_date}_{_folder_counter}_m{self.__lhub.api.version}")
             if not os.path.exists(_new_export_folder) or not os.listdir(_new_export_folder):
                 parent_folder = _new_export_folder
                 path = Path(parent_folder)
