@@ -57,9 +57,11 @@ def add_script_output_args(parser: parser_types, include_log_level: bool = True,
 def build_args_and_logger(
         parser: argparse.ArgumentParser = None,
         description: str = None,
+
         include_credential_file_arg: bool = False,
         include_list_output_args: bool = False,
         include_logging_args: bool = False,
+
         default_log_level: str = DEFAULT_LOG_LEVEL,
         **table_kwargs
 ) -> (argparse.Namespace, Logging):
