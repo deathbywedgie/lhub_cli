@@ -1,6 +1,7 @@
 import argparse
 from .output import SUPPORTED_OUTPUT_TYPES, SUPPORTED_TABLE_FORMATS
 from ..log import Logging
+from .config import list_credential_files
 from typing import Union
 
 parser_types = Union[argparse.ArgumentParser, argparse._ArgumentGroup]
@@ -56,12 +57,20 @@ def add_script_output_args(parser: parser_types, include_log_level: bool = True,
 def build_args_and_logger(
         parser: argparse.ArgumentParser = None,
         description: str = None,
+        include_credential_file_arg: bool = False,
         include_list_output_args: bool = False,
         include_logging_args: bool = False,
         default_log_level: str = DEFAULT_LOG_LEVEL,
         **table_kwargs
 ) -> (argparse.Namespace, Logging):
     parser = parser or argparse.ArgumentParser(description=description)
+
+    if include_credential_file_arg is True:
+        cred_files = list_credential_files()
+        existing_creds_str = ''
+        if cred_files:
+            existing_creds_str = f', existing: {cred_files}'
+        parser.add_argument("-cred", "--credentials_file_name", default=None, help=f"Alternate credentials file name to use (default: \"credentials\"{existing_creds_str})")
 
     if include_list_output_args is True:
         # To prevent duplication of logging lines, leave include_log_level out when calling add_script_output_args
