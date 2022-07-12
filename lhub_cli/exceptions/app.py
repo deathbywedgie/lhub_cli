@@ -25,6 +25,22 @@ class InvalidUserInput(BaseAppError):
         super().__init__(message=message, input_var=input_var, *args, **kwargs)
 
 
+class ColumnNotFound(InvalidUserInput):
+    """Column not found"""
+    message = "Column not found"
+
+    def __init__(self, column_name=None, message=None, *args, **kwargs):
+        super().__init__(message=message, input_var=column_name, *args, **kwargs)
+
+
+class ConnectionNotFound(InvalidUserInput):
+    """Connection not found in credentials file"""
+    message = "Connection not found by name"
+
+    def __init__(self, name=None, *args, **kwargs):
+        super().__init__(input_var=name, *args, **kwargs)
+
+
 class PathNotFound(InvalidUserInput):
     """File path not found"""
     message = "File or directory not found"
@@ -32,14 +48,6 @@ class PathNotFound(InvalidUserInput):
     def __init__(self, path, message=None, *args, **kwargs):
         self.path = path
         super().__init__(message=message, input_var=path, *args, **kwargs)
-
-
-class ColumnNotFound(InvalidUserInput):
-    """Batch ID not found"""
-    message = "Column not found"
-
-    def __init__(self, column_name=None, message=None, *args, **kwargs):
-        super().__init__(message=message, input_var=column_name, *args, **kwargs)
 
 
 class UserGroupNotFound(InvalidUserInput):
