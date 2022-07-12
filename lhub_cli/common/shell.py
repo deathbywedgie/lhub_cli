@@ -1,6 +1,25 @@
 import sys
 
 
+def ask_for_input(question, prompt=None, allow_empty=False, force_lowercase=False, choices: list = None) -> str:
+    while True:
+        sys.stdout.write(question + (prompt or "") + " ")
+        choice = input().strip()
+        if force_lowercase:
+            choice = choice.lower()
+        if choices and choice not in choices:
+            sys.stdout.write(f"Please respond with one of the following: {'/'.join(choices)}\n\n")
+            continue
+
+        if not choice:
+            if allow_empty is True:
+                return choice
+            else:
+                sys.stdout.write("Input cannot be blank\n\n")
+                continue
+        return choice
+
+
 def query_yes_no(question, default: (str, bool) = None):
     """Ask a yes/no question via raw_input() and return their answer.
 
