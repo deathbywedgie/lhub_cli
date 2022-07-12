@@ -48,6 +48,8 @@ def generate_logger(name, instance_name=None, level=None, include_file_info=Fals
     logger = logging.getLogger(name)
     if level:
         logger.setLevel(level)
+    if level == "NOTSET":
+        logger.disabled = True
 
     # if "instance_name" was passed and a connection key was not already passed, add it automatically
     if instance_name and kwargs.get("connection"):
