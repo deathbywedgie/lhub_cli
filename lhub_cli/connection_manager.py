@@ -6,11 +6,12 @@ from dataclasses_json import dataclass_json
 from lhub import LogicHub
 from .encryption import Encryption
 import getpass
-from .common.config import dict_to_ini_file, list_credential_files
+from .common.config import dict_to_ini_file
 from .statics import CREDENTIALS_FILE_NAME, LHUB_CONFIG_PATH, PREFERENCES_FILE_NAME
 from .common.shell import query_yes_no
 from requests.exceptions import SSLError
 from .exceptions.base import CLIValueError
+from .exceptions.app import ConnectionNotFound
 import sys
 from .log import generate_logger, ExpectedLoggerTypes
 
@@ -66,6 +67,7 @@ class Connection:
     hostname: str
     username: str
     verify_ssl: bool
+    auth_type: str = None
 
     def __init__(self, name, **kwargs):
         self.connection_name = name
@@ -80,6 +82,9 @@ class Connection:
         if not self.api_key:
             assert self.password, "Neither an API key nor a password were provided in the connection config"
             assert self.username, "Username not provided"
+            self.auth_type = "password"
+        else:
+            self.auth_type = "token"
 
     # Make it possible to represent a Connection object simply as a string in order to see the connection name
     def __str__(self):
@@ -132,12 +137,15 @@ class LhubConfig:
 
     @property
     def credential_file_changed(self):
-        if self.__full_config and self.__credentials_file_modified_time == os.path.getmtime(self.credentials_path):
+        if not self.__full_config or not self.__credentials_file_modified_time:
+            return None
+        elif self.__credentials_file_modified_time != os.path.getmtime(self.credentials_path):
             return True
         return False
 
-    def reload(self):
+    def reload(self, reason=None):
         # Reset file modified time so that any existing config will not be used
+        self.__log.debug("Config reload requested" + f": {reason}" if reason else "")
         self.__credentials_file_modified_time = None
         self.__load_credentials_file()
 
@@ -157,10 +165,12 @@ class LhubConfig:
             del self.__full_config[instance_label]
         self.write_credential_file()
 
-    def get_instance(self, instance_label):
+    def get_instance(self, instance_label, safe=True):
         if self.credential_file_changed:
-            self.reload()
+            self.reload(reason="credential file was modified since it was loaded")
         if instance_label not in self.__full_config:
+            if not safe:
+                raise ConnectionNotFound(instance_label)
             self.__log.error(f"No connection found: {instance_label=}")
             return
         # Make a copy of the dict, otherwise this will only work once, and it
@@ -256,6 +266,11 @@ class LhubConfig:
             for i in instances:
                 print(f"    {i}")
 
+    def exists(self, name) -> bool:
+        if name in self.list_configured_instances():
+            return True
+        return False
+
 
 class LogicHubConnection:
     __instance = None
@@ -297,3 +312,6 @@ class LogicHubConnection:
 
         self.__instance = name
         self.credentials = _new_credentials
+
+    def exists(self, name) -> bool:
+        return self.config.exists(name=name)
