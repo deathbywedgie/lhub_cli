@@ -2,6 +2,7 @@ import csv
 import json
 import os
 from ..exceptions.app import ColumnNotFound
+from typing import Union, List, Dict
 
 
 from tabulate import tabulate, tabulate_formats
@@ -10,30 +11,26 @@ SUPPORTED_OUTPUT_TYPES = sorted(["csv", "json", "json_pretty", "table"])
 SUPPORTED_TABLE_FORMATS = sorted(tabulate_formats)
 
 
-def print_fancy_lists(results, output_type="table", table_format=None, ordered_headers=None, output_file=None, sort_order=None, file_only=False):
+def print_fancy_lists(
+        results: list, output_type: str = "table", table_format: str = None, ordered_headers: list = None,
+        output_file: str = None, sort_order: List[Union[Dict, str]] = None, file_only: bool = False):
     """
     Print a list of dicts in a variety of ways, such as json, CSV, or assorted text tables
 
     :param results: list of dicts with a common schema
-    :type results: list
 
     :param output_type: selection from SUPPORTED_OUTPUT_TYPES (default: table)
-    :type output_type: str
 
     :param table_format: selection from SUPPORTED_TABLE_FORMATS (default: tabulate default)
 
     :param ordered_headers: optional: customize exact order of columns in the final output
-    :type ordered_headers: list
 
     :param output_file: optional: path to write the output to a file
-    :type output_type: str
 
-    :param sort_order: optional: list of column headers to sort the results by before printing
-    :type sort_order: list
+    :param sort_order: optional: list of column headers to sort the results by before printing.
+     Entries must either be a column name as a string or a dict in the format of: {"name": "<column_name>", "reverse": <bool>}
 
     :param file_only: If enabled, skip printing if an output file is specified
-    :type file_only: bool
-
     """
 
     def print_json(result_list, pretty=False):
@@ -90,7 +87,12 @@ def print_fancy_lists(results, output_type="table", table_format=None, ordered_h
 
     if sort_order:
         for column in [sort_order[-1 - n] for n in range(len(sort_order))]:
-            results = sorted(results, key=lambda e: (e[column]))
+            if isinstance(column, dict):
+                column_name = column["name"]
+                reverse = column.get("reverse", False)
+                results = sorted(results, key=lambda e: (e[column_name]), reverse=reverse)
+            else:
+                results = sorted(results, key=lambda e: (e[column]))
 
     if ordered_headers:
         new_rows = []
