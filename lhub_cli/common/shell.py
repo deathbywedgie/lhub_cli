@@ -75,12 +75,14 @@ def main_script_wrapper(func, *args, **kwargs):
     exit_code = 0
     try:
         func(*args, **kwargs)
-    except SystemExit:
-        pass
     except KeyboardInterrupt:
         print()
         logger.critical("Canceled by user")
         print("Control-C Pressed, stopping...", file=sys.stderr)
+
+    except SystemExit:
+        pass
+
     except (LhBaseException, LhCliBaseException, RequestException) as e:
         exit_code = 1
         message = getattr(e, "message", None)
@@ -94,6 +96,8 @@ def main_script_wrapper(func, *args, **kwargs):
             logger.debug(f"Last status: {last_response_status}")
         if last_response_text := getattr(e, "last_response_text", None):
             logger.debug.print(f"Last server response: {last_response_text}")
+
     except:
         logger.exception("Script failed with exception")
+
     sys.exit(exit_code)
