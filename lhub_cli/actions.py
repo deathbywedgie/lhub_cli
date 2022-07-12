@@ -159,7 +159,7 @@ class Actions:
 
     def delete_user_by_name(self, username):
         results = self.__lhub.actions.delete_user_by_name(usernames=username)
-        self.__log.info(f"User deleted successfully", username=username)
+        self.__log.warn(f"User deleted successfully", username=username)
         return results
 
     def list_users(self, print_output=True, return_results=True, show_hostname=False, sort_order=None, attributes: list = None, hide_inactive=True, **print_kwargs):
