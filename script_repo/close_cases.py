@@ -7,6 +7,8 @@ import lhub_cli
 from lhub_cli.common.output import print_fancy_lists
 from lhub_cli.common.shell import query_yes_no
 
+target_status = "Resolved"
+
 
 def get_args():
     _parser = argparse.ArgumentParser(description="Search Cases")
@@ -56,7 +58,7 @@ def get_query():
 
 async def close_case(case_id, cli_session: lhub_cli.LogicHubCLI):
     log.warn("Closing case", case_id=case_id)
-    _ = cli_session.session.api.case_update(case_id, status="Resolved")
+    _ = cli_session.session.api.case_update(case_id, status=target_status)
 
 
 async def close_all_cases(case_ids: list, cli_session: lhub_cli.LogicHubCLI):
