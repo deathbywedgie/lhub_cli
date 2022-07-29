@@ -11,6 +11,7 @@ from math import floor
 from datetime import datetime
 
 from lhub import LogicHub
+from requests.exceptions import ConnectTimeout, RequestException
 
 from lhub_cli.common.args import build_args_and_logger
 from lhub_cli.common.shell import main_script_wrapper
@@ -43,6 +44,7 @@ def get_args():
 
     # Optional args:
     _parser.add_argument("-l", "--limit", metavar="INT", type=int, default=None, help=f"Set the maximum number of batches to reprocess (default: None)")
+    _parser.add_argument("-r", "--retry", action="store_true", help=f"Retry automatically if script fails (e.g. loses connectivity, etc.)")
 
     final_args, logger = build_args_and_logger(
         parser=_parser,
@@ -222,7 +224,21 @@ def main():
         log.info("Error batches remaining", batch_number=initial_error_count - len(error_batches_remaining) + 1, total_batches=initial_error_count)
         print(f"\n{connection_name}, Stream {args.stream_id}\nBatch {initial_error_count - len(error_batches_remaining) + 1} of {initial_error_count}")
         batch = error_batches_remaining.pop(0)
-        session.process_batch(batch)
+        if not args.retry:
+            session.process_batch(batch)
+        else:
+            try:
+                session.process_batch(batch)
+            except ConnectTimeout:
+                log.error("Request timed out; reattempting...")
+            except RequestException as e:
+                log.critical(f"Failed with requests exception: {repr(e)}")
+                log.info("Reattempting...")
+            except KeyboardInterrupt as e:
+                raise e
+            except (Exception, BaseException) as e:
+                log.critical(f"Failed with unknown exception: {repr(e)}")
+                log.critical("Reattempting...")
 
 
 if __name__ == "__main__":
