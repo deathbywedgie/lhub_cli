@@ -12,7 +12,7 @@ def add_script_logging_args(parser: parser_types, default_log_level=DEFAULT_LOG_
     logging = parser.add_mutually_exclusive_group()
     logging.add_argument(
         "-log", "--level", dest="LOG_LEVEL", default=default_log_level,
-        help="Set logging level",
+        help=f"Set logging level (default: {default_log_level.lower() if default_log_level else None})",
         choices=['critical', 'fatal', 'error', 'warn', 'warning', 'info', 'debug', 'notset']
     )
     logging.add_argument("-v", "--debug", dest="DEBUG", action="store_true", help="Enable debug logging (shortcut)")
