@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.1.0.1'
+VERSION = '0.1.0.2'
 
 setup(
     name="lhub_cli",
@@ -11,7 +11,7 @@ setup(
     long_description="A Python package for interacting with LogicHub via shell commands",
     packages=find_packages(),
     install_requires=[
-        "lhub ~= 0.2.0",
+        "lhub ~= 0.2.4",
         "configobj >= 5.0.6",
         "dataclasses_json >= 0.5.6",
         "rsa >= 4.8",
