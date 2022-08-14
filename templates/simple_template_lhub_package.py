@@ -5,12 +5,10 @@ import lhub_cli
 from lhub import LogicHub
 import json
 
-SCRIPT_DESCRIPTION = "Simple script for testing API calls"
-
 
 # available args and expected input
 def get_args():
-    parser = argparse.ArgumentParser(description=SCRIPT_DESCRIPTION)
+    parser = argparse.ArgumentParser(description="Simple script for testing API calls")
 
     # Inputs required from user
     parser.add_argument("instance_name", help="Nickname of the instance from stored config")

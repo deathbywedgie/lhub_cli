@@ -10,6 +10,7 @@ from .connection_manager import LogicHubConnection
 from .common.output import print_fancy_lists
 from numbers import Number
 from .log import generate_logger, ExpectedLoggerTypes
+from typing import Union
 
 # ToDo NEXT: Follow the same formula from "export_playbooks" to add support for exporting other resource types as well
 #  * custom lists
@@ -29,7 +30,7 @@ from .log import generate_logger, ExpectedLoggerTypes
 class Actions:
 
     def __init__(self, session: lhub.LogicHub, config: LogicHubConnection, instance_label, logger: ExpectedLoggerTypes = None):
-        self.lhub = session
+        self.__lhub = session
         self.__config = config
         self.__instance_name = instance_label
         self.__log = logger or generate_logger(name=__name__, instance_name=instance_label)
@@ -39,7 +40,7 @@ class Actions:
         _folder_counter = 0
         while True:
             _folder_counter += 1
-            _new_export_folder = os.path.join(parent_folder, f"{self.lhub.api.url.server_name}_{export_type}_{current_date}_{_folder_counter}")
+            _new_export_folder = os.path.join(parent_folder, f"{self.__lhub.api.url.server_name}_{export_type}_{current_date}_{_folder_counter}_m{self.__lhub.api.version}")
             if not os.path.exists(_new_export_folder) or not os.listdir(_new_export_folder):
                 parent_folder = _new_export_folder
                 path = Path(parent_folder)
@@ -71,7 +72,7 @@ class Actions:
     def export_playbooks(self, export_folder, limit=None, return_summary=False):
         export_folder = self.__set_export_path(parent_folder=export_folder, export_type="flows")
         self.__log.info(f"Saving files to: {export_folder}")
-        flow_ids = self.lhub.actions.playbook_ids
+        flow_ids = self.__lhub.actions.playbook_ids
         flow_ids_list = sorted(list(flow_ids.keys()))
         if limit:
             flow_ids_list = flow_ids_list[:limit]
@@ -82,15 +83,15 @@ class Actions:
             _file_info = f"{n + 1} of {len(flow_ids_list)}: {_flow_id} ({_flow_name})"
             self.__log.info(f"{_file_info} - Downloading...")
             try:
-                _response = self.lhub.api.export_playbook(_flow_id)
+                _response = self.__lhub.api.export_playbook(_flow_id)
                 self.__save_export_to_disk(response=_response, export_folder=export_folder, resource_id=_flow_id, resource_name=_flow_name, file_info=_file_info)
             except HTTPError:
                 warning = f"{_file_info} - Download FAILED"
-                _response_message = json.loads(self.lhub.api.last_response_text)
+                _response_message = json.loads(self.__lhub.api.last_response_text)
                 if not failed.get(_flow_id):
                     failed[_flow_id] = {"name": _flow_name, "errors": []}
                 if not _response_message.get("errors"):
-                    error = f"unknown failure (status code {self.lhub.api.last_response_status})"
+                    error = f"unknown failure (status code {self.__lhub.api.last_response_status})"
                     new_warning = f"{warning}: {error}"
                     failed[_flow_id]["errors"].append(error)
                     self.__log.error(new_warning)
@@ -122,7 +123,7 @@ class Actions:
             batch_id = batch_ids[n]
             if sec_between_calls and n > 0:
                 time.sleep(sec_between_calls)
-            _ = self.lhub.actions.reprocess_batch(batch_id)
+            _ = self.__lhub.actions.reprocess_batch(batch_id)
             self.__log.info(f'Batch {batch_id} rerun on {self.__instance_name}')
 
     @staticmethod
@@ -145,6 +146,22 @@ class Actions:
     def _reformat_users(users: list):
         return [Actions._reformat_user(user) for user in users]
 
+    def create_user(self, username, email, authentication_type: Union[str, dict] = None, group_names: list = None, group_ids: list = None):
+        _result = self.__lhub.actions.create_user(
+            username=username,
+            email=email,
+            authentication_type=authentication_type or "password",
+            group_names=group_names or ["Everyone"],
+            group_ids=group_ids,
+        )
+        self.__log.info("User created successfully", username=username)
+        return _result
+
+    def delete_user_by_name(self, username):
+        results = self.__lhub.actions.delete_user_by_name(usernames=username)
+        self.__log.warn(f"User deleted successfully", username=username)
+        return results
+
     def list_users(self, print_output=True, return_results=True, show_hostname=False, sort_order=None, attributes: list = None, hide_inactive=True, **print_kwargs):
         required_columns = ["username"]
         if sort_order is None:
@@ -153,7 +170,7 @@ class Actions:
             attributes = []
         attributes = attributes or []
 
-        results = self.lhub.actions.list_users(hide_inactive=hide_inactive, simple_format=True)
+        results = self.__lhub.actions.list_users(hide_inactive=hide_inactive, simple_format=True)
         for r in results:
             if 'auth_type' in r:
                 r['password_enabled'] = r['auth_type'] == "password" or isinstance(r['auth_type'], dict) and r['auth_type']['enablePasswordAuthentication'] is True
@@ -166,7 +183,7 @@ class Actions:
         # Update output to insert
         stock_fields = {"connection name": self.__config.credentials.connection_name}
         if show_hostname:
-            stock_fields["hostname"] = self.lhub.api.url.server_name
+            stock_fields["hostname"] = self.__lhub.api.url.server_name
         results = [
             dict(**stock_fields, **{k: v for k, v in r.items() if k in required_columns or k in attributes or not attributes})
             for r in results
@@ -187,12 +204,12 @@ class Actions:
             attributes = []
         attributes = attributes or []
 
-        results = self.lhub.actions.list_commands(simple_format=True)
+        results = self.__lhub.actions.list_commands(simple_format=True)
 
         # Update output to insert
         stock_fields = {"connection name": self.__config.credentials.connection_name}
         if show_hostname:
-            stock_fields["hostname"] = self.lhub.api.url.server_name
+            stock_fields["hostname"] = self.__lhub.api.url.server_name
         results = [
             dict(**stock_fields, **{k: v for k, v in r.items() if k in required_columns or k in attributes or not attributes})
             for r in results

@@ -1,20 +1,23 @@
 #!/usr/bin/env python3
 
 import argparse
-import json
 import lhub_cli
+import json
 
 
 # available args and expected input
 def get_args():
-    _parser = argparse.ArgumentParser(description="Delete a LogicHub user")
+    _parser = argparse.ArgumentParser(description="Simple script for testing API calls")
+
+    # Inputs required from user
     _parser.add_argument("instance_name", help="Nickname of the instance from stored config")
-    _parser.add_argument("user", help="Username to delete")
-    final_args, logger = lhub_cli.common.args.build_args_and_logger(
+
+    final_parser, logger = lhub_cli.common.args.build_args_and_logger(
         parser=_parser,
-        include_logging_args=True
+        include_logging_args=True,
+        default_log_level="INFO"
     )
-    return final_args, logger.log
+    return final_parser, logger.log
 
 
 # Must be run outside of main in order for the full effect of verbose logging
@@ -25,8 +28,9 @@ def main():
     # If the instance name does not already exist as a saved connection, this will assist the user in saving a new one.
     cli = lhub_cli.LogicHubCLI(instance_name=args.instance_name)
 
-    results = cli.actions.delete_user_by_name(username=args.user)
-    print(json.dumps(results, indent=2))
+    # Choose the CLI action to execute. Below is an example for
+    result = cli.actions.list_users()
+    print(json.dumps(result))
 
 
 if __name__ == "__main__":

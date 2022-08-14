@@ -11,25 +11,29 @@ OUTPUT_LEVEL = 2
 
 # available args and expected input
 def get_args():
-    parser = argparse.ArgumentParser(description=SCRIPT_DESCRIPTION)
+    _parser = argparse.ArgumentParser(description=SCRIPT_DESCRIPTION)
 
     # Inputs required from user
-    parser.add_argument("instance_name", help="Nickname of the instance from stored config")
-    parser.add_argument("-cred", "--credentials_file_name", default=None, help="Alternate credentials file name to use (default: \"credentials\")")
+    _parser.add_argument("instance_name", help="Nickname of the instance from stored config")
 
-    output = parser.add_mutually_exclusive_group()
+    output = _parser.add_mutually_exclusive_group()
     output.add_argument("-q", "--quiet", action="store_true", help="Operate quietly: minimal output")
     output.add_argument("-s", "--silent", action="store_true", help="Operate silently: suppress all output")
-    output.add_argument("--debug", action="store_true", help="Enable debug logging")
-    _args = parser.parse_args()
+    final_parser, logger = lhub_cli.common.args.build_args_and_logger(
+        parser=_parser,
+        include_credential_file_arg=True,
+        include_list_output_args=True,
+        include_logging_args=True,
+        default_log_level="INFO"
+    )
 
     global OUTPUT_LEVEL
-    if _args.silent:
+    if final_parser.silent:
         OUTPUT_LEVEL = 0
-    elif _args.quiet:
+    elif final_parser.quiet:
         OUTPUT_LEVEL = 1
 
-    return _args
+    return final_parser, logger.log
 
 
 def print_quiet(msg):
@@ -42,22 +46,15 @@ def print_normal(msg):
         print(msg)
 
 
+# Must be run outside of main in order for the full effect of verbose logging
+args, log = get_args()
+
+
 def main():
-    args = get_args()
-
-    log_level = None
-    if args.debug:
-        log_level = "DEBUG"
-    elif args.silent:
-        log_level = "FATAL"
-
     # If the instance name does not already exist as a saved connection, this will assist the user in saving a new one.
     cli = lhub_cli.LogicHubCLI(
         credentials_file_name=args.credentials_file_name,
-        instance_name=args.instance_name,
-
-        # If the --debug option was passed by the user, set log level to debug, otherwise leave it default
-        log_level=log_level
+        instance_name=args.instance_name
     )
 
     # Disable all notification preferences that exist as of m94.10
@@ -91,7 +88,4 @@ def main():
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        print("Control-C Pressed, stopping...", file=stderr)
+    lhub_cli.common.shell.main_script_wrapper(main)
