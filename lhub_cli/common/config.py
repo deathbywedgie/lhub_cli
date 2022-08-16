@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from configobj import ConfigObj
 
@@ -25,6 +26,9 @@ def dict_to_ini_file(dict_obj, file_path, sort_keys=True):
 
 
 def list_credential_files():
+    if not os.path.exists(LHUB_CONFIG_PATH):
+        __lhub_path = Path(LHUB_CONFIG_PATH)
+        __lhub_path.mkdir(parents=True, exist_ok=True)
     return [CREDENTIALS_FILE_NAME] + sorted(list(set(
         [
             f.removeprefix(f'{CREDENTIALS_FILE_NAME}-')
