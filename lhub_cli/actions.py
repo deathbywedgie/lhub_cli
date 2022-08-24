@@ -114,13 +114,15 @@ class Actions:
             return successful, failed
 
     def reprocess_batches(self, batch_ids: (list, str, int), sec_between_calls=None):
-        if not isinstance(batch_ids, list):
-            batch_ids = [batch_ids]
-        batch_ids = sorted(list(set(batch_ids)))
+        # Rather that using list(set(batch_ids)) to dedupe, do it manually to preserve the order that they are requested in
+        unique_ids = []
+        for b in batch_ids if isinstance(batch_ids, list) else [batch_ids]:
+            if b not in unique_ids:
+                unique_ids.append(b)
         if sec_between_calls:
             sec_between_calls = float(sec_between_calls)
-        for n in range(len(batch_ids)):
-            batch_id = batch_ids[n]
+        for n in range(len(unique_ids)):
+            batch_id = unique_ids[n]
             if sec_between_calls and n > 0:
                 time.sleep(sec_between_calls)
             _ = self.__lhub.actions.reprocess_batch(batch_id)
