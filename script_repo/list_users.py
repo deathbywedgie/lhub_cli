@@ -77,7 +77,6 @@ def connect_to_instance(name, connection_number):
 def process_instance(name, connection_number):
     local_log.debug(f"Fetching users from instance {connection_number}/{INSTANCE_COUNT}", i=name)
     cli = INSTANCE_SESSIONS[name]
-    local_log.debug(f"Fetching users from {cli.instance_name} ({connection_number}/{INSTANCE_COUNT})")
     COMBINED_RESULTS.extend(
         cli.actions.list_users(
             print_output=False,
