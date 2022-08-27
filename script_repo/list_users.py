@@ -8,14 +8,15 @@ Additional packages required:
 """
 
 import argparse
+import threading
+
+import progressbar
 
 import lhub_cli
 from lhub_cli.common.output import print_fancy_lists
-import progressbar
-import threading
 
 # Configurable defaults
-THREAD_LIMIT = 10
+THREAD_LIMIT = 20
 
 
 def get_args():
@@ -50,7 +51,7 @@ if not INSTANCE_NAMES:
     raise IOError("No stored LogicHub instances found")
 
 INSTANCE_COUNT = len(INSTANCE_NAMES)  # total count gets used so much, might as well calculate it just once
-THREAD_COUNT = inputs.threads if inputs.threads < INSTANCE_COUNT else INSTANCE_COUNT
+THREAD_COUNT = inputs.threads
 LOG_LEVEL = inputs.LOG_LEVEL
 HIDE_INACTIVE = inputs.inactive is False  # Hide inactive users, True by default
 
@@ -64,94 +65,73 @@ INSTANCE_SESSIONS = {}  # session tracker, where instance name is the key and it
 FINISHED = []  # Track completed jobs for the progress bar
 
 
-def connect_to_instance(name, connection_number):
+def process_instance(name, connection_number):
     local_log.debug(f"Verifying connection {connection_number}/{INSTANCE_COUNT}", i=name)
     INSTANCE_SESSIONS[name] = lhub_cli.LogicHubCLI(
         instance_name=name,
         credentials_file_name=CREDENTIALS_FILE_NAME
     )
-    del RUNNING_JOBS[RUNNING_JOBS.index(name)]
-    FINISHED.append(name)
+    local_log.debug(f"Connection verified: {connection_number}/{INSTANCE_COUNT}", i=name)
 
-
-def process_instance(name, connection_number):
     local_log.debug(f"Fetching users from instance {connection_number}/{INSTANCE_COUNT}", i=name)
     cli = INSTANCE_SESSIONS[name]
-    COMBINED_RESULTS.extend(
+    COMBINED_RESULTS.extend((
         cli.actions.list_users(
             print_output=False,
             show_hostname=True,
             attributes=OUTPUT_COLUMNS,
             hide_inactive=HIDE_INACTIVE,
         )
-    )
+    ))
     del RUNNING_JOBS[RUNNING_JOBS.index(name)]
     FINISHED.append(name)
 
 
-def show_progress(progress_message):
-    if LOG_LEVEL == "DEBUG":
-        return
-    cycle = progressbar.progressbar(range(INSTANCE_COUNT))
-    print(progress_message)
-    for n in cycle:
-        while len(FINISHED) < n:
+def process_all_instances():
+    # moving all of these into a dedicated function that runs in a thread of its
+    # own allows me to show progress as jobs complete instead of as they start
+    threads = [threading.Thread(target=process_instance, name=INSTANCE_NAMES[n], kwargs=dict(name=INSTANCE_NAMES[n], connection_number=n + 1)) for n in range(INSTANCE_COUNT)]
+    for n in range(INSTANCE_COUNT):
+        while len(RUNNING_JOBS) >= THREAD_COUNT:
             pass
-    FINISHED.clear()
+        RUNNING_JOBS.append(threads[n].name)
+        threads[n].start()
+
+    [thread.join() for thread in threads]
 
 
 def main():
-    local_log.info(f"Processing {INSTANCE_COUNT} instance{'' if INSTANCE_COUNT == 1 else 's'}", instance_count=INSTANCE_COUNT, threads=THREAD_COUNT)
-
-    progress_thread = threading.Thread(target=show_progress, args=["Verifying connections"])
-    progress_thread.start()
-
-    connections_needed = INSTANCE_NAMES.copy()
-    threads = []
-    for n in range(INSTANCE_COUNT):
-        while True:
-            if THREAD_COUNT == "unlimited" or len(RUNNING_JOBS) < THREAD_COUNT:
-                _instance = connections_needed.pop(0)
-                RUNNING_JOBS.append(_instance)
-                new_thread = threading.Thread(target=connect_to_instance, kwargs=dict(name=_instance, connection_number=n+1))
-                threads.append(new_thread)
-                new_thread.start()
-                break
-
-    progress_thread.join()
-    [thread.join() for thread in threads]
-
-    users_needed = INSTANCE_NAMES.copy()
-    threads = []
-
-    progress_thread = threading.Thread(target=show_progress, args=["Fetching users"])
-    progress_thread.start()
+    local_log.info(f"Processing {INSTANCE_COUNT} instance{'' if INSTANCE_COUNT == 1 else 's'}", instance_count=INSTANCE_COUNT, thread_limit=THREAD_COUNT)
 
     cycle = range(INSTANCE_COUNT)
-    for n in cycle:
-        while True:
-            if THREAD_COUNT == "unlimited" or len(RUNNING_JOBS) < THREAD_COUNT:
-                _instance = users_needed.pop(0)
-                RUNNING_JOBS.append(_instance)
-                new_thread = threading.Thread(target=process_instance, kwargs=dict(name=_instance, connection_number=n+1))
-                threads.append(new_thread)
-                new_thread.start()
-                break
+    if LOG_LEVEL != "DEBUG":
+        cycle = progressbar.progressbar(cycle)
+        print(f"Fetching users from {INSTANCE_COUNT} LogicHub servers")
 
-    progress_thread.join()
-    [thread.join() for thread in threads]
+    job_thread = threading.Thread(target=process_all_instances)
+
+    for n in cycle:
+        if n == 0:
+            job_thread.start()
+        while len(FINISHED) < n:
+            pass
+
+    job_thread.join()
+
+    # Fix when the admin user's email field is returned as a string of "null"
+    for u in COMBINED_RESULTS:
+        if u['email'] == 'null':
+            u['email'] = None
 
     print_fancy_lists(
         results=COMBINED_RESULTS,
         output_type=inputs.output,
         table_format=inputs.table_format,
         output_file=inputs.file,
+        sort_order=["connection name"],
 
         # Enable to provide columns to keep, in order
         # ordered_headers=[],
-
-        # Enable to provide a list of columns for custom sorting
-        # sort_order=[],
 
         file_only=(True if inputs.file else False)
     )
