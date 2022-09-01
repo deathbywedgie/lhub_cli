@@ -222,7 +222,7 @@ def main():
 
     while error_batches_remaining:
         log.info("Error batches remaining", batch_number=initial_error_count - len(error_batches_remaining) + 1, total_batches=initial_error_count)
-        print(f"\n{connection_name}, Stream {args.stream_id}\nBatch {initial_error_count - len(error_batches_remaining) + 1} of {initial_error_count}")
+        print(f"\n{connection_name}, Stream {args.stream_id}: {session.stream_name}\nBatch {initial_error_count - len(error_batches_remaining) + 1} of {initial_error_count}")
         batch = error_batches_remaining.pop(0)
         if not args.retry:
             session.process_batch(batch)
